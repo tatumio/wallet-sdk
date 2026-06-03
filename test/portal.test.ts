@@ -1,0 +1,599 @@
+import { describe, expect, expectTypeOf, it } from 'vitest';
+import { WALLET_CHAINS, TatumWalletsSdk, WalletChain, getWalletChainConfig } from '../src/index.js';
+import type {
+  BuildTransactionResponse,
+  ClientDetails,
+  ClientEjectableBackupSharesResponse,
+  CreateClientResponse,
+  EjectableBackupShares,
+  EnableEjectResponse,
+  GenerateWalletResponse,
+  ListClientsResponse,
+  SendAssetsResponse,
+  SignResponse
+} from '../src/portal/types/index.js';
+
+const jsonResponse = (body: unknown, init?: ResponseInit) =>
+  new Response(JSON.stringify(body), {
+    status: init?.status ?? 200,
+    headers: {
+      'content-type': 'application/json',
+      ...Object.fromEntries(new Headers(init?.headers).entries())
+    }
+  });
+
+const CUSTODIAN_TOKEN = 'portal-custodian-token';
+
+/** Custodian calls first resolve the Portal token from Tatum; this detects that fetch. */
+const isCustodianKeyRequest = (input: RequestInfo | URL) =>
+  String(input).endsWith('/v4/wallets/custodian-api-key');
+
+/** Portal API calls (vs. the Tatum custodian-key fetch that precedes custodian operations). */
+const portalCallsOf = (calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }>) =>
+  calls.filter((c) => String(c.input).startsWith('https://api.portalhq.io'));
+
+describe('Portal-backed Tatum Wallets SDK', () => {
+  it('encodes custodian path parameters', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      baseUrl: 'https://api.tatum.test',
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return isCustodianKeyRequest(input)
+          ? jsonResponse({ portalCustodianApiKey: CUSTODIAN_TOKEN })
+          : jsonResponse({ id: 'client-1' });
+      }
+    });
+
+    await sdk.custodian.getClient({
+      path: { clientId: 'client/with space' }
+    });
+
+    expect(String(portalCallsOf(calls)[0]?.input)).toBe(
+      'https://api.portalhq.io/api/v3/custodians/me/clients/client%2Fwith%20space'
+    );
+  });
+
+  it('sends Portal requests with bearer auth', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return isCustodianKeyRequest(input)
+          ? jsonResponse({ portalCustodianApiKey: CUSTODIAN_TOKEN })
+          : jsonResponse({ results: [] });
+      }
+    });
+
+    await sdk.custodian.listClients();
+
+    const [listCall] = portalCallsOf(calls);
+    expect(String(listCall?.input)).toBe('https://api.portalhq.io/api/v3/custodians/me/clients');
+    expect(listCall?.init).toMatchObject({ method: 'GET' });
+    expect(listCall?.init?.headers).toMatchObject({
+      accept: 'application/json',
+      authorization: `Bearer ${CUSTODIAN_TOKEN}`
+    });
+  });
+
+  it('fetches the Portal custodian token from Tatum and memoizes it', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return String(input).endsWith('/v4/wallets/custodian-api-key')
+          ? jsonResponse({ portalCustodianApiKey: 'real-custodian-token' })
+          : jsonResponse({ results: [] });
+      }
+    });
+
+    await sdk.custodian.listClients();
+    await sdk.custodian.listClients();
+
+    // Key fetched against the Tatum base URL with x-api-key, then reused.
+    expect(String(calls[0]?.input)).toBe('https://api.tatum.io/v4/wallets/custodian-api-key');
+    expect(calls[0]?.init?.headers).toMatchObject({ 'x-api-key': 'tatum-api-key' });
+    // Both Portal calls carry the resolved bearer; the key endpoint is hit only once.
+    const keyFetches = calls.filter((c) => String(c.input).endsWith('/v4/wallets/custodian-api-key'));
+    expect(keyFetches).toHaveLength(1);
+    const portalCalls = calls.filter((c) => String(c.input).startsWith('https://api.portalhq.io'));
+    expect(portalCalls).toHaveLength(2);
+    expect(portalCalls[0]?.init?.headers).toMatchObject({ authorization: 'Bearer real-custodian-token' });
+    expect(portalCalls[1]?.init?.headers).toMatchObject({ authorization: 'Bearer real-custodian-token' });
+  });
+
+  it('throws when the Tatum API key is not authorized for Portal', async () => {
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      fetch: async () => jsonResponse({})
+    });
+
+    await expect(sdk.custodian.listClients()).rejects.toThrow(
+      'Tatum API key is not authorized for Portal'
+    );
+  });
+
+  it('injects a Tatum-resolved RPC URL for client sendAssets when omitted', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return jsonResponse({ transactionHash: '0xhash' });
+      }
+    });
+
+    const client = sdk.initClient({ token: 'portal-client-token' });
+
+    await client.sendAssets({
+      body: {
+        share: 'share',
+        chain: WalletChain.ETHEREUM_MAINNET,
+        to: '0xabc',
+        token: 'NATIVE',
+        amount: '0.01'
+      }
+    });
+
+    expect(String(calls[0]?.input)).toBe('https://mpc-client.portalhq.io/v1/assets/send');
+    expect(calls[0]?.init?.body).toBe(
+      JSON.stringify({
+        share: 'share',
+        chain: 'eip155:1',
+        to: '0xabc',
+        token: 'NATIVE',
+        amount: '0.01',
+        rpcUrl: 'https://ethereum-mainnet.gateway.tatum.io/tatum-api-key'
+      })
+    );
+  });
+
+  it('throws when resolving an RPC URL for an unsupported chain', async () => {
+    const sdk = new TatumWalletsSdk({ apiKey: 'tatum-api-key', fetch: async () => jsonResponse({}) });
+    const client = sdk.initClient({ token: 'portal-client-token' });
+
+    // Escape hatch with an unmapped chain — no gateway slug exists for it.
+    await expect(
+      client.enclaveRequest('sendAssets', {
+        body: { share: 's', chain: 'eip155:999999', to: '0xabc', token: 'NATIVE', amount: '0.01' }
+      })
+    ).rejects.toThrow('No Tatum RPC gateway configured for chain "eip155:999999"');
+  });
+
+  it('creates and lists Portal clients through the Tatum-backed custodian', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return isCustodianKeyRequest(input)
+          ? jsonResponse({ portalCustodianApiKey: CUSTODIAN_TOKEN })
+          : jsonResponse({ id: 'client-1', clientApiKey: 'client-key', clientSessionToken: 'session-token' });
+      }
+    });
+
+    await sdk.custodian.createClient({ body: { isAccountAbstracted: false } });
+    await sdk.custodian.listClients({ query: { take: 10, cursor: 'client-0' } });
+
+    const [createCall, listCall] = portalCallsOf(calls);
+    expect(String(createCall?.input)).toBe('https://api.portalhq.io/api/v3/custodians/me/clients');
+    expect(createCall?.init).toMatchObject({
+      method: 'POST',
+      body: JSON.stringify({ isAccountAbstracted: false })
+    });
+    expect(String(listCall?.input)).toBe(
+      'https://api.portalhq.io/api/v3/custodians/me/clients?take=10&cursor=client-0'
+    );
+    expect(listCall?.init).toMatchObject({ method: 'GET' });
+  });
+
+  it('rejects for missing custodian path parameters', async () => {
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      fetch: async (input) =>
+        isCustodianKeyRequest(input)
+          ? jsonResponse({ portalCustodianApiKey: CUSTODIAN_TOKEN })
+          : jsonResponse({ ok: true })
+    });
+
+    // Cast to bypass the now-required typed path so the runtime guard is exercised.
+    await expect(
+      sdk.custodian.getClient({ path: {} as { clientId: string } })
+    ).rejects.toThrow('Missing path parameter "clientId"');
+  });
+
+  it('uses the selected client token for client-scoped API calls', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return jsonResponse({ id: 'client-1' });
+      }
+    });
+
+    const client = sdk.initClient({ token: 'portal-client-token' });
+
+    await client.getClientDetails();
+
+    expect(String(calls[0]?.input)).toBe('https://api.portalhq.io/api/v3/clients/me');
+    expect(calls[0]?.init?.headers).toMatchObject({
+      authorization: 'Bearer portal-client-token'
+    });
+  });
+
+  it('uses the Enclave MPC base URL for wallet generation and backup', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return jsonResponse({
+          SECP256K1: { share: 'share-1', id: 'id-1' },
+          ED25519: { share: 'share-2', id: 'id-2' }
+        });
+      }
+    });
+
+    const client = sdk.initClient({ token: 'portal-client-token' });
+
+    await client.generateWallet();
+    await client.backupWallet({ body: { generateResponse: '{"ok":true}' } });
+
+    expect(String(calls[0]?.input)).toBe('https://mpc-client.portalhq.io/v1/generate');
+    expect(calls[0]?.init).toMatchObject({ method: 'POST', body: JSON.stringify({}) });
+    expect(String(calls[1]?.input)).toBe('https://mpc-client.portalhq.io/v1/backup');
+    expect(calls[1]?.init).toMatchObject({
+      method: 'POST',
+      body: JSON.stringify({ generateResponse: '{"ok":true}' })
+    });
+  });
+
+  it('supports custodian transaction and ejection operations', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return isCustodianKeyRequest(input)
+          ? jsonResponse({ portalCustodianApiKey: CUSTODIAN_TOKEN })
+          : jsonResponse({ ok: true });
+      }
+    });
+
+    await sdk.custodian.buildTransaction({
+      path: { clientId: 'client-1', chain: WalletChain.ETHEREUM_MAINNET },
+      body: { to: '0xabc', token: 'USDC', amount: '0.01' }
+    });
+    await sdk.custodian.enableEject({
+      path: { clientId: 'client-1' },
+      body: { walletId: 'wallet-1', ejectableUntil: '2026-06-01T00:00:00.000Z' }
+    });
+    await sdk.custodian.getEjectableBackupShares({
+      path: { clientId: 'client-1', walletId: 'wallet-1' }
+    });
+
+    const [buildCall, ejectCall, sharesCall] = portalCallsOf(calls);
+    expect(String(buildCall?.input)).toBe(
+      'https://api.portalhq.io/api/v3/custodians/me/clients/client-1/chains/eip155%3A1/assets/send/build-transaction'
+    );
+    expect(String(ejectCall?.input)).toBe(
+      'https://api.portalhq.io/api/v3/custodians/me/clients/client-1/enable-eject'
+    );
+    expect(String(sharesCall?.input)).toBe(
+      'https://api.portalhq.io/api/v3/custodians/me/clients/client-1/wallets/wallet-1/ejectable-backup-shares'
+    );
+  });
+
+  it('supports client wallet-share operations', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return jsonResponse({ ok: true });
+      }
+    });
+    const client = sdk.initClient({ token: 'portal-client-token' });
+
+    await client.updateSigningSharePairs({
+      body: { signingSharePairIds: ['ssp-1'], status: 'STORED_CLIENT' }
+    });
+    await client.updateBackupSharePairs({
+      body: { backupSharePairIds: ['bsp-1'], status: 'STORED_CLIENT_BACKUP_SHARE' }
+    });
+    await client.getEjectableBackupShares({
+      path: { walletId: 'wallet-1' },
+      query: { backupMethod: 'PASSWORD' }
+    });
+    await client.completeEject({
+      path: { walletId: 'wallet-1' }
+    });
+
+    expect(String(calls[0]?.input)).toBe('https://api.portalhq.io/api/v3/clients/me/signing-share-pairs');
+    expect(String(calls[1]?.input)).toBe('https://api.portalhq.io/api/v3/clients/me/backup-share-pairs');
+    expect(String(calls[2]?.input)).toBe(
+      'https://api.portalhq.io/api/v3/clients/me/wallets/wallet-1/ejectable-backup-shares?backupMethod=PASSWORD'
+    );
+    expect(String(calls[3]?.input)).toBe('https://api.portalhq.io/api/v3/clients/me/wallets/wallet-1/complete-eject');
+  });
+
+  it('evaluates a transaction with a CAIP-2 chainId query', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return jsonResponse({ evaluation: { riskScore: 0.2, classification: 'LOW_RISK' } });
+      }
+    });
+    const client = sdk.initClient({ token: 'portal-client-token' });
+
+    await client.evaluateTransaction({
+      query: { chainId: WalletChain.ETHEREUM_MAINNET },
+      body: {
+        network: 'ethereum',
+        transaction: { toAddress: '0xabc', value: '10000000000000000' }
+      }
+    });
+
+    expect(String(calls[0]?.input)).toBe(
+      'https://api.portalhq.io/api/v3/clients/me/evaluate-transaction?chainId=eip155%3A1'
+    );
+    expect(calls[0]?.init).toMatchObject({
+      method: 'POST',
+      body: JSON.stringify({
+        network: 'ethereum',
+        transaction: { toAddress: '0xabc', value: '10000000000000000' }
+      })
+    });
+    expect(calls[0]?.init?.headers).toMatchObject({ authorization: 'Bearer portal-client-token' });
+  });
+
+  it('mints a client session token through the custodian', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return isCustodianKeyRequest(input)
+          ? jsonResponse({ portalCustodianApiKey: CUSTODIAN_TOKEN })
+          : jsonResponse({ id: 'client-1', clientSessionToken: 'cst-1', isAccountAbstracted: false });
+      }
+    });
+
+    await sdk.custodian.createClientSession({
+      path: { clientId: 'client-1' },
+      body: { isAccountAbstracted: false }
+    });
+
+    const [sessionCall] = portalCallsOf(calls);
+    expect(String(sessionCall?.input)).toBe(
+      'https://api.portalhq.io/api/v3/custodians/me/clients/client-1/sessions'
+    );
+    expect(sessionCall?.init).toMatchObject({
+      method: 'POST',
+      body: JSON.stringify({ isAccountAbstracted: false })
+    });
+    expect(sessionCall?.init?.headers).toMatchObject({
+      authorization: `Bearer ${CUSTODIAN_TOKEN}`
+    });
+  });
+
+  it('stores and reads client-encrypted backup shares (Portal-Managed flow)', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return jsonResponse({ cipherText: '0351cf2b' });
+      }
+    });
+    const client = sdk.initClient({ token: 'portal-client-token' });
+
+    await client.storeEncryptedBackupShare({
+      path: { backupSharePairId: 'bsp 1' },
+      body: { clientCipherText: 'cipher' }
+    });
+    await client.getBackupShareCipherText({ path: { backupSharePairId: 'bsp-1' } });
+
+    expect(String(calls[0]?.input)).toBe('https://api.portalhq.io/api/v3/clients/me/backup-share-pairs/bsp%201');
+    expect(calls[0]?.init).toMatchObject({
+      method: 'PATCH',
+      body: JSON.stringify({ clientCipherText: 'cipher' })
+    });
+    expect(String(calls[1]?.input)).toBe(
+      'https://api.portalhq.io/api/v3/clients/me/backup-share-pairs/bsp-1/cipher-text'
+    );
+    expect(calls[1]?.init).toMatchObject({ method: 'GET' });
+  });
+
+  it('raw-signs a hex digest by curve on the Enclave base URL', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return jsonResponse({ data: '0xsig' });
+      }
+    });
+    const client = sdk.initClient({ token: 'portal-client-token' });
+
+    await client.rawSign({
+      path: { curve: 'SECP256K1' },
+      body: { params: '7369676e2074686973', share: 'share' }
+    });
+
+    expect(String(calls[0]?.input)).toBe('https://mpc-client.portalhq.io/v1/raw/sign/SECP256K1');
+    expect(calls[0]?.init).toMatchObject({
+      method: 'POST',
+      body: JSON.stringify({ params: '7369676e2074686973', share: 'share' })
+    });
+  });
+
+  it('supports recover, sign, and idempotent sendAssets', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return jsonResponse({ data: '0xsigned' });
+      }
+    });
+    const client = sdk.initClient({ token: 'portal-client-token' });
+
+    await client.recoverWallet({ body: { backupResponse: '{"ok":true}' } });
+    await client.sign({
+      body: {
+        share: 'share',
+        method: 'eth_sendTransaction',
+        params: { to: '0xabc', value: '0x01' },
+        chainId: WalletChain.ETHEREUM_MAINNET,
+        to: '0xabc'
+      },
+      headers: { 'Idempotency-Key': 'idem-1' }
+    });
+    await client.sendAssets({
+      body: {
+        share: 'share',
+        chain: WalletChain.ETHEREUM_MAINNET,
+        to: '0xabc',
+        token: 'NATIVE',
+        amount: '0.01',
+        rpcUrl: 'https://caller.rpc'
+      },
+      headers: { 'Idempotency-Key': 'idem-2' }
+    });
+
+    expect(String(calls[0]?.input)).toBe('https://mpc-client.portalhq.io/v1/recover');
+    expect(String(calls[1]?.input)).toBe('https://mpc-client.portalhq.io/v1/sign');
+    expect(calls[1]?.init?.headers).toMatchObject({ 'idempotency-key': 'idem-1' });
+    expect(calls[1]?.init?.body).toBe(
+      JSON.stringify({
+        share: 'share',
+        method: 'eth_sendTransaction',
+        params: { to: '0xabc', value: '0x01' },
+        chainId: 'eip155:1',
+        to: '0xabc',
+        rpcUrl: 'https://ethereum-mainnet.gateway.tatum.io/tatum-api-key'
+      })
+    );
+    expect(String(calls[2]?.input)).toBe('https://mpc-client.portalhq.io/v1/assets/send');
+    expect(calls[2]?.init?.headers).toMatchObject({ 'idempotency-key': 'idem-2' });
+    expect(calls[2]?.init?.body).toBe(
+      JSON.stringify({
+        share: 'share',
+        chain: 'eip155:1',
+        to: '0xabc',
+        token: 'NATIVE',
+        amount: '0.01',
+        rpcUrl: 'https://caller.rpc'
+      })
+    );
+  });
+});
+
+describe('WalletChain primary-chain mapping', () => {
+  it('exposes a Portal config for every primary chain, with the enum value as the chainId', () => {
+    const chains = Object.values(WalletChain);
+    expect(chains).toHaveLength(13);
+
+    for (const chain of chains) {
+      const config = getWalletChainConfig(chain);
+      expect(config).toBe(WALLET_CHAINS[chain]);
+      // Enum value is the CAIP-2 id, so it round-trips through the config.
+      expect(config.chainId).toBe(chain);
+      expect(['SECP256K1', 'ED25519']).toContain(config.curve);
+      expect(config.tatumRpcNetwork).toMatch(/^[a-z0-9-]+$/);
+    }
+  });
+
+  it('maps curves, rpc requirements, and Tatum RPC networks per Portal/Tatum docs', () => {
+    expect(WALLET_CHAINS[WalletChain.ETHEREUM_MAINNET]).toEqual({
+      chainId: 'eip155:1',
+      curve: 'SECP256K1',
+      requiresRpcUrl: false,
+      tatumRpcNetwork: 'ethereum-mainnet'
+    });
+    expect(WALLET_CHAINS[WalletChain.SOLANA_MAINNET].curve).toBe('ED25519');
+    expect(WALLET_CHAINS[WalletChain.STELLAR_MAINNET].curve).toBe('ED25519');
+    expect(WALLET_CHAINS[WalletChain.BITCOIN_MAINNET]).toEqual({
+      chainId: 'bip122:000000000019d6689c085ae165831e93-p2wpkh',
+      curve: 'SECP256K1',
+      requiresRpcUrl: true,
+      tatumRpcNetwork: 'bitcoin-mainnet'
+    });
+    // Stellar, Tron, Celo, Bitcoin require an rpcUrl; the EVM L2s and Solana do not.
+    expect(WALLET_CHAINS[WalletChain.TRON_MAINNET].requiresRpcUrl).toBe(true);
+    expect(WALLET_CHAINS[WalletChain.CELO_MAINNET].requiresRpcUrl).toBe(true);
+    expect(WALLET_CHAINS[WalletChain.BASE_MAINNET].requiresRpcUrl).toBe(false);
+    // Non-obvious Tatum gateway slugs.
+    expect(WALLET_CHAINS[WalletChain.ARBITRUM_MAINNET].tatumRpcNetwork).toBe('arb-one-mainnet');
+    expect(WALLET_CHAINS[WalletChain.AVALANCHE_MAINNET].tatumRpcNetwork).toBe('avax-mainnet');
+    expect(WALLET_CHAINS[WalletChain.ETHEREUM_SEPOLIA]).toEqual({
+      chainId: 'eip155:11155111',
+      curve: 'SECP256K1',
+      requiresRpcUrl: false,
+      tatumRpcNetwork: 'ethereum-sepolia'
+    });
+  });
+});
+
+describe('WalletsClient enclave types', () => {
+  const client = new TatumWalletsSdk({ apiKey: 'k', fetch: async () => new Response('{}') }).initClient({
+    token: 't'
+  });
+
+  it('infers enclave response types and enforces bodies', () => {
+    expectTypeOf(client.generateWallet()).resolves.toEqualTypeOf<GenerateWalletResponse>();
+    expectTypeOf(client.sign).parameter(0).toMatchTypeOf<{ body: { method: string } }>();
+    expectTypeOf(
+      client.sendAssets({
+        body: { share: 's', chain: WalletChain.ETHEREUM_MAINNET, to: '0x', token: 'NATIVE', amount: '0.1' }
+      })
+    ).resolves.toEqualTypeOf<SendAssetsResponse>();
+    expectTypeOf(
+      client.sign({
+        body: { method: 'personal_sign', params: [], share: 's', chainId: WalletChain.ETHEREUM_MAINNET, to: '0x' }
+      })
+    ).resolves.toEqualTypeOf<SignResponse>();
+  });
+});
+
+describe('WalletsClient client-scoped types', () => {
+  const client = new TatumWalletsSdk({ apiKey: 'k', fetch: async () => new Response('{}') }).initClient({
+    token: 't'
+  });
+
+  it('infers client response types and enforces path/query/body', () => {
+    expectTypeOf(client.getClientDetails()).resolves.toEqualTypeOf<ClientDetails>();
+    expectTypeOf(client.buildTransaction)
+      .parameter(0)
+      .toMatchTypeOf<{ path: { chain: WalletChain }; body: { to: string } }>();
+    expectTypeOf(
+      client.getEjectableBackupShares({ path: { walletId: 'w' }, query: { backupMethod: 'PASSWORD' } })
+    ).resolves.toEqualTypeOf<ClientEjectableBackupSharesResponse>();
+    expectTypeOf(client.completeEject({ path: { walletId: 'w' } })).resolves.toEqualTypeOf<void>();
+    void ({} as BuildTransactionResponse);
+  });
+});
+
+describe('CustodianApi types', () => {
+  const custodian = new TatumWalletsSdk({
+    apiKey: 'k',
+    fetch: async (input) =>
+      isCustodianKeyRequest(input) ? jsonResponse({ portalCustodianApiKey: CUSTODIAN_TOKEN }) : new Response('{}')
+  }).custodian;
+
+  it('infers custodian response types and enforces path/query/body', () => {
+    expectTypeOf(custodian.createClient({ body: { isAccountAbstracted: false } })).resolves.toEqualTypeOf<CreateClientResponse>();
+    expectTypeOf(custodian.listClients({ query: { take: 10 } })).resolves.toEqualTypeOf<ListClientsResponse>();
+    expectTypeOf(custodian.getClient({ path: { clientId: 'c' } })).resolves.toEqualTypeOf<ClientDetails>();
+    expectTypeOf(custodian.getClient).parameter(0).toMatchTypeOf<{ path: { clientId: string } }>();
+    expectTypeOf(custodian.enableEject({ path: { clientId: 'c' }, body: { walletId: 'w' } })).resolves.toEqualTypeOf<EnableEjectResponse>();
+    expectTypeOf(custodian.getEjectableBackupShares({ path: { clientId: 'c', walletId: 'w' } })).resolves.toEqualTypeOf<EjectableBackupShares>();
+  });
+});
