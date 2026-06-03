@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Verify package contents without publishing: `npm --cache ./.npm-cache pack --dry-run`.
 - `prepublishOnly` gates publish on: `npm test && npm run typecheck && npm run build`. Run all three before handing off changes.
 
-This folder is a git repo on `main` with **no commits yet** — everything is untracked/staged initial work. Use Conventional Commit messages (`feat:`, `fix:`, `test:`) when asked to commit.
+This folder is a git repo on `master` (also the default/PR branch). Conventional Commit messages (`feat:`, `fix:`, `test:`) are **required** — release-please derives versions and the changelog from them.
 
 ## Architecture
 
@@ -91,13 +91,11 @@ ESM-only package (`type: module`, single `import` export — do **not** add a CJ
 
 **Pre-release gate:** `PortalTatumProvider` is now fully wired to real Tatum endpoints — the custodian token via `GET /v4/wallets/custodian-api-key`, and per-chain RPC via the static `gateway.tatum.io` URLs. No mocks remain in the provider; the earlier mock-removal blocker is satisfied.
 
-**First release ships as stable under the `latest` dist-tag** — no beta soak:
+**Releases are automated** via release-please + npm Trusted Publishers (OIDC) — see `docs/superpowers/specs/2026-06-03-npm-trusted-publishing-design.md`:
 
-```sh
-npm version 0.1.0                 # bump version (git must be init'd, or pass --no-git-tag-version)
-npm test && npm run typecheck && npm run build
-npm pack --dry-run                # confirm tarball contents
-npm publish                       # defaults to latest; prepublishOnly gate + access:public fire automatically
-```
+- Merging conventional commits to `master` makes release-please open/update a release PR (version bump + CHANGELOG).
+- Merging that release PR tags `vX.Y.Z`, creates a GitHub Release, and the `publish` job in `.github/workflows/release.yml` publishes to npm via OIDC — no npm tokens exist. `prepublishOnly` (test + typecheck + build) is the final gate.
+- Do **not** run `npm version` or `npm publish` manually, and do not edit `package.json` `version`, `CHANGELOG.md`, or `.release-please-manifest.json` by hand — release-please owns them.
+- The npm Trusted Publisher is pinned to repo `tatumio/wallet-sdk` + workflow `release.yml` — renaming either breaks publishing until the npm-side config is updated.
 
-Consumers install with `npm i @tatumio/wallet-sdk`. Verify: `npm view @tatumio/wallet-sdk dist-tags`.
+Consumers install with `npm i @tatumio/wallet-sdk`. Verify a release: `npm view @tatumio/wallet-sdk dist-tags`.
