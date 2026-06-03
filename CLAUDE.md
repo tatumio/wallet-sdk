@@ -91,15 +91,13 @@ ESM-only package (`type: module`, single `import` export — do **not** add a CJ
 
 **Pre-release gate:** `PortalTatumProvider` is now fully wired to real Tatum endpoints — the custodian token via `GET /v4/wallets/custodian-api-key`, and per-chain RPC via the static `gateway.tatum.io` URLs. No mocks remain in the provider; the earlier mock-removal blocker is satisfied.
 
-**First release goes under the `beta` dist-tag for an API-stability soak**, even with real auth. Keeping it off `latest` lets the public SDK surface settle before `npm i @tatumio/wallets-sdk` resolves to it:
+**First release ships as stable under the `latest` dist-tag** — no beta soak:
 
 ```sh
-npm version 0.1.0-beta.0          # bump prerelease (git must be init'd, or pass --no-git-tag-version)
+npm version 0.1.0                 # bump version (git must be init'd, or pass --no-git-tag-version)
 npm test && npm run typecheck && npm run build
 npm pack --dry-run                # confirm tarball contents
-npm publish --tag beta            # NOT latest; prepublishOnly gate + access:public fire automatically
+npm publish                       # defaults to latest; prepublishOnly gate + access:public fire automatically
 ```
 
-Consumers opt in with `npm i @tatumio/wallets-sdk@beta`. Verify: `npm view @tatumio/wallets-sdk dist-tags`.
-
-**Graduate to stable** once the API surface is confirmed: `npm version 0.1.0` (or `1.0.0`) → `npm publish` (defaults to `latest`) → optionally `npm dist-tag rm @tatumio/wallets-sdk beta`.
+Consumers install with `npm i @tatumio/wallets-sdk`. Verify: `npm view @tatumio/wallets-sdk dist-tags`.
