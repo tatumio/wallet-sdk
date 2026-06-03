@@ -100,4 +100,4 @@ npm pack --dry-run                # confirm tarball contents
 npm publish                       # defaults to latest; prepublishOnly gate + access:public fire automatically
 ```
 
-Consumers install with `npm i @tatumio/wallets-sdk`. Verify: `npm view @tatumio/wallets-sdk dist-tags`.
+Consumers install with `npm i @tatumio/wallet-sdk`. Verify: `npm view @tatumio/wallet-sdk dist-tags`.

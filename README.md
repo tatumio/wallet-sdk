@@ -1,17 +1,17 @@
-# @tatumio/wallets-sdk
+# @tatumio/wallet-sdk
 
 TypeScript SDK for Tatum MPC wallets — wallet creation, signing, sending, backup/recovery, and custodian/client management.
 
 ## Installation
 
 ```sh
-npm install @tatumio/wallets-sdk
+npm install @tatumio/wallet-sdk
 ```
 
 ## Usage
 
 ```ts
-import { TatumWalletsSdk } from "@tatumio/wallets-sdk";
+import { TatumWalletsSdk } from "@tatumio/wallet-sdk";
 
 const wallets = new TatumWalletsSdk({
   apiKey: process.env.TATUM_API_KEY!,
@@ -49,7 +49,7 @@ const session = await wallets.custodian.createClientSession({
 Client-scoped calls use the client API key or client session token for the selected client:
 
 ```ts
-import { WalletChain } from "@tatumio/wallets-sdk";
+import { WalletChain } from "@tatumio/wallet-sdk";
 
 const client = wallets.initClient({
   token: newClient.clientApiKey ?? session.clientSessionToken!,
