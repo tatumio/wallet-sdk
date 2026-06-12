@@ -21,6 +21,8 @@ const wallets = new TatumWalletsSdk({
 
 For lower-level or not-yet-modeled Tatum calls, use `wallets.api.request(...)` directly.
 
+See [docs/USAGE.md](docs/USAGE.md) for the full guide and complete API reference.
+
 ## Custodian and Client Operations
 
 Custodian-scoped calls are authenticated through your Tatum API key:
