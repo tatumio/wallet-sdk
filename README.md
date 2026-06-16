@@ -156,7 +156,7 @@ const recovered = await client.recoverWallet({
 }); // typed as RecoverWalletResponse
 ```
 
-Custodian-scoped calls are authenticated through Tatum: the SDK resolves the custodian token from your Tatum `x-api-key` via `GET /v4/wallets/custodian-api-key` (throwing if your key isn't authorized for wallets). Enclave operations that need an RPC URL get one automatically — the SDK builds `https://<network>.gateway.tatum.io/<your-api-key>` from the chain's `tatumRpcNetwork` (see `WALLET_CHAINS`) — unless you pass an explicit `rpcUrl` in the body.
+Custodian-scoped calls are authenticated through Tatum: the SDK resolves the custodian token from your Tatum `x-api-key` via `GET /v4/wallets/custodian-api-key` (throwing if your key isn't authorized for wallets). Enclave operations that need an RPC URL get one automatically — the SDK builds `https://<network>.gateway.tatum.io/<your-api-key>` from the chain's `tatumNetwork` (see `WALLET_CHAINS`) — unless you pass an explicit `rpcUrl` in the body.
 
 ## Development
 

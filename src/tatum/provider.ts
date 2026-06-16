@@ -77,7 +77,7 @@ export class PortalTatumProvider {
    * CAIP-2 id (the {@link WalletChain} value). Throws for unsupported chains.
    */
   async getRpcUrl(chain: string): Promise<string> {
-    const network = WALLET_CHAINS[chain as WalletChain]?.tatumRpcNetwork;
+    const network = WALLET_CHAINS[chain as WalletChain]?.tatumNetwork;
 
     if (!network) {
       throw new Error(`No Tatum RPC gateway configured for chain "${chain}"`);

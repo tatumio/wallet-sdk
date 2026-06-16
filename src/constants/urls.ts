@@ -10,6 +10,6 @@ export const PORTAL_ENCLAVE_BASE_URL = 'https://mpc-client.portalhq.io';
 /**
  * Tatum RPC gateway domain. Per-chain RPC URLs are built as
  * `https://<network>.${TATUM_RPC_GATEWAY_DOMAIN}/<apiKey>` (the `<network>`
- * slug comes from each chain's {@link WalletChainConfig.tatumRpcNetwork}).
+ * slug comes from each chain's {@link WalletChainConfig.tatumNetwork}).
  */
 export const TATUM_RPC_GATEWAY_DOMAIN = 'gateway.tatum.io';

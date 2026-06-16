@@ -133,7 +133,7 @@ expects one.
 import { WalletChain, WALLET_CHAINS, getWalletChainConfig } from "@tatumio/wallet-sdk";
 
 const cfg = getWalletChainConfig(WalletChain.SOLANA_MAINNET);
-// → { chainId, curve: 'ED25519', requiresRpcUrl: false, tatumRpcNetwork: 'solana-mainnet' }
+// → { chainId, curve: 'ED25519', requiresRpcUrl: false, tatumNetwork: 'solana-mainnet' }
 ```
 
 | `WalletChain` | CAIP-2 id | Curve | `requiresRpcUrl` |
@@ -234,7 +234,7 @@ const sent = await client.sendAssets({
 
 **RPC URL injection.** Enclave operations (`sendAssets`, `sign`) need a chain RPC URL. The SDK
 resolves a Tatum gateway URL automatically — `https://<network>.gateway.tatum.io/<your-api-key>`,
-where `<network>` is the chain's `tatumRpcNetwork`. Pass an explicit `rpcUrl` in the body only
+where `<network>` is the chain's `tatumNetwork`. Pass an explicit `rpcUrl` in the body only
 to override it (e.g. your own node):
 
 ```ts

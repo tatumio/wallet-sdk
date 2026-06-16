@@ -546,7 +546,7 @@ describe('WalletChain primary-chain mapping', () => {
       // Enum value is the CAIP-2 id, so it round-trips through the config.
       expect(config.chainId).toBe(chain);
       expect(['SECP256K1', 'ED25519']).toContain(config.curve);
-      expect(config.tatumRpcNetwork).toMatch(/^[a-z0-9-]+$/);
+      expect(config.tatumNetwork).toMatch(/^[a-z0-9-]+$/);
     }
   });
 
@@ -555,7 +555,7 @@ describe('WalletChain primary-chain mapping', () => {
       chainId: 'eip155:1',
       curve: 'SECP256K1',
       requiresRpcUrl: false,
-      tatumRpcNetwork: 'ethereum-mainnet'
+      tatumNetwork: 'ethereum-mainnet'
     });
     expect(WALLET_CHAINS[WalletChain.SOLANA_MAINNET].curve).toBe('ED25519');
     expect(WALLET_CHAINS[WalletChain.STELLAR_MAINNET].curve).toBe('ED25519');
@@ -563,20 +563,20 @@ describe('WalletChain primary-chain mapping', () => {
       chainId: 'bip122:000000000019d6689c085ae165831e93-p2wpkh',
       curve: 'SECP256K1',
       requiresRpcUrl: true,
-      tatumRpcNetwork: 'bitcoin-mainnet'
+      tatumNetwork: 'bitcoin-mainnet'
     });
     // Stellar, Tron, Celo, Bitcoin require an rpcUrl; the EVM L2s and Solana do not.
     expect(WALLET_CHAINS[WalletChain.TRON_MAINNET].requiresRpcUrl).toBe(true);
     expect(WALLET_CHAINS[WalletChain.CELO_MAINNET].requiresRpcUrl).toBe(true);
     expect(WALLET_CHAINS[WalletChain.BASE_MAINNET].requiresRpcUrl).toBe(false);
     // Non-obvious Tatum gateway slugs.
-    expect(WALLET_CHAINS[WalletChain.ARBITRUM_MAINNET].tatumRpcNetwork).toBe('arb-one-mainnet');
-    expect(WALLET_CHAINS[WalletChain.AVALANCHE_MAINNET].tatumRpcNetwork).toBe('avax-mainnet');
+    expect(WALLET_CHAINS[WalletChain.ARBITRUM_MAINNET].tatumNetwork).toBe('arb-one-mainnet');
+    expect(WALLET_CHAINS[WalletChain.AVALANCHE_MAINNET].tatumNetwork).toBe('avax-mainnet');
     expect(WALLET_CHAINS[WalletChain.ETHEREUM_SEPOLIA]).toEqual({
       chainId: 'eip155:11155111',
       curve: 'SECP256K1',
       requiresRpcUrl: false,
-      tatumRpcNetwork: 'ethereum-sepolia'
+      tatumNetwork: 'ethereum-sepolia'
     });
   });
 });
