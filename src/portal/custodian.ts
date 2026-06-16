@@ -1,9 +1,8 @@
-import { PORTAL_API_BASE_URL } from '../constants/index.js';
+import { getWalletChainConfig } from '../chains.js';
 import { buildRequestOptions } from '../operation.js';
-import { createPortalApiClient } from './transport.js';
 import type { WalletChain } from '../chains.js';
-import type { PortalTatumProvider } from '../tatum/provider.js';
-import type { RequestOptions, WalletsSDKConfig } from '../types.js';
+import type { WalletsApiClient } from '../tatum/api-client.js';
+import type { RequestOptions } from '../types.js';
 import type {
   BuildTransactionBody,
   BuildTransactionResponse,
@@ -15,62 +14,70 @@ import type {
   EjectableBackupShares,
   EnableEjectBody,
   EnableEjectResponse,
+  GasSponsorshipChain,
+  GetGasSponsorshipChainsQuery,
   ListClientsQuery,
   ListClientsResponse,
-  PortalRequestOptions
+  PortalRequestOptions,
+  UpdateGasSponsorshipBody
 } from './types/index.js';
 
+/** Custodian operations, proxied by Tatum under `/v4/wallets` (Tatum injects the Portal token). */
 export const custodianOperations = {
-  createClient: { method: 'POST', path: '/custodians/me/clients' },
-  listClients: { method: 'GET', path: '/custodians/me/clients' },
-  getClient: { method: 'GET', path: '/custodians/me/clients/{clientId}' },
-  createClientSession: { method: 'POST', path: '/custodians/me/clients/{clientId}/sessions' },
+  createClient: { method: 'POST', path: '/v4/wallets/clients' },
+  listClients: { method: 'GET', path: '/v4/wallets/clients' },
+  getClient: { method: 'GET', path: '/v4/wallets/clients/{clientId}' },
+  createClientSession: { method: 'POST', path: '/v4/wallets/clients/{clientId}/sessions' },
   buildTransaction: {
     method: 'POST',
-    path: '/custodians/me/clients/{clientId}/chains/{chain}/assets/send/build-transaction'
+    path: '/v4/wallets/clients/{clientId}/chains/{chain}/assets/send/build-transaction'
   },
-  enableEject: { method: 'PATCH', path: '/custodians/me/clients/{clientId}/enable-eject' },
+  enableEject: { method: 'PATCH', path: '/v4/wallets/clients/{clientId}/enable-eject' },
   getEjectableBackupShares: {
     method: 'GET',
-    path: '/custodians/me/clients/{clientId}/wallets/{walletId}/ejectable-backup-shares'
-  }
+    path: '/v4/wallets/clients/{clientId}/wallets/{walletId}/ejectable-backup-shares'
+  },
+  getGasSponsorshipChains: { method: 'GET', path: '/v4/wallets/gas-sponsorship/chains' },
+  updateGasSponsorship: { method: 'PATCH', path: '/v4/wallets/gas-sponsorship/chains/{chain}' }
 } as const;
 
 export type CustodianOperation = keyof typeof custodianOperations;
 
 export type CustodianRequestOptions = RequestOptions;
 
+/** Map a public CAIP-2 {@link WalletChain} to the Tatum network slug used in proxy paths/queries. */
+const toTatumNetwork = (chain: WalletChain): string => getWalletChainConfig(chain).tatumNetwork;
+
 /**
- * Custodian-scoped Portal operations (`/custodians/me/...`).
- *
- * Every call is authenticated with the Portal custodian token, which the SDK
- * resolves from your Tatum `x-api-key` — you never pass it yourself. Use this
- * to manage Portal clients, mint session tokens, and run the eject flow.
+ * Custodian-scoped operations, served through the Tatum Wallets proxy
+ * (`/v4/wallets/...`). Authenticated with your Tatum `x-api-key`; Tatum resolves
+ * the custodian token server-side, so you never handle it. Use this to manage
+ * clients, mint sessions, build transactions, run the eject flow, and configure
+ * gas sponsorship.
  */
 export class CustodianApi {
-  constructor(
-    private readonly provider: PortalTatumProvider,
-    private readonly config: WalletsSDKConfig
-  ) {}
+  constructor(private readonly tatumClient: WalletsApiClient) {}
 
   /**
    * Escape hatch: dispatch any custodian operation by name with raw options.
    * Prefer the typed methods below; use this only for not-yet-modeled behavior.
    */
+  // `async` so a synchronous failure (e.g. a missing path param from
+  // `buildRequestOptions`) surfaces as a rejected promise, not a sync throw.
   async request<TResponse = unknown>(
     operationName: CustodianOperation,
     options: CustodianRequestOptions = {}
   ): Promise<TResponse> {
     const operation = custodianOperations[operationName];
-    const token = await this.provider.getCustodianToken();
-    const client = createPortalApiClient(this.config, token, PORTAL_API_BASE_URL);
 
-    return client.request<TResponse>(buildRequestOptions(operation.method, operation.path, options));
+    return this.tatumClient.request<TResponse>(
+      buildRequestOptions(operation.method, operation.path, options)
+    );
   }
 
   /**
-   * Register a new Portal client. Returns its `id`, `clientApiKey`, and an
-   * initial `clientSessionToken` — pass either to {@link TatumWalletsSdk.initClient}.
+   * Register a new client. Returns its `id`, `clientApiKey`, and an initial
+   * `clientSessionToken` — pass either to {@link TatumWalletsSdk.initClient}.
    */
   createClient<TResponse = CreateClientResponse>(
     options?: PortalRequestOptions<CreateClientBody>
@@ -78,7 +85,7 @@ export class CustodianApi {
     return this.request<TResponse>('createClient', options);
   }
 
-  /** List the custodian's Portal clients, with cursor-based pagination (`take` ≤ 100). */
+  /** List the custodian's clients, with cursor-based pagination (`take` ≤ 100). */
   listClients<TResponse = ListClientsResponse>(
     options?: PortalRequestOptions<never, never, ListClientsQuery>
   ): Promise<TResponse> {
@@ -106,7 +113,10 @@ export class CustodianApi {
   buildTransaction<TResponse = BuildTransactionResponse>(
     options: PortalRequestOptions<BuildTransactionBody, { clientId: string; chain: WalletChain }>
   ): Promise<TResponse> {
-    return this.request<TResponse>('buildTransaction', options);
+    return this.request<TResponse>('buildTransaction', {
+      ...options,
+      path: { clientId: options.path.clientId, chain: toTatumNetwork(options.path.chain) }
+    });
   }
 
   /**
@@ -127,5 +137,38 @@ export class CustodianApi {
     options: PortalRequestOptions<never, { clientId: string; walletId: string }>
   ): Promise<TResponse> {
     return this.request<TResponse>('getEjectableBackupShares', options);
+  }
+
+  /**
+   * List gas-sponsorship configuration per chain. Optionally filter by `chains`
+   * (mapped to Tatum network slugs).
+   */
+  getGasSponsorshipChains<TResponse = GasSponsorshipChain[]>(
+    options?: PortalRequestOptions<never, never, GetGasSponsorshipChainsQuery>
+  ): Promise<TResponse> {
+    const requestOptions: CustodianRequestOptions = {};
+    const chains = options?.query?.chains;
+
+    if (chains && chains.length > 0) {
+      requestOptions.query = { chains: chains.map(toTatumNetwork).join(',') };
+    }
+    if (options?.headers !== undefined) {
+      requestOptions.headers = options.headers;
+    }
+    if (options?.signal !== undefined) {
+      requestOptions.signal = options.signal;
+    }
+
+    return this.request<TResponse>('getGasSponsorshipChains', requestOptions);
+  }
+
+  /** Update the gas-allowance limit for a chain's sponsorship. */
+  updateGasSponsorship<TResponse = GasSponsorshipChain>(
+    options: PortalRequestOptions<UpdateGasSponsorshipBody, { chain: WalletChain }>
+  ): Promise<TResponse> {
+    return this.request<TResponse>('updateGasSponsorship', {
+      ...options,
+      path: { chain: toTatumNetwork(options.path.chain) }
+    });
   }
 }

@@ -28,7 +28,7 @@ export class TatumWalletsSdk {
   constructor(private readonly config: WalletsSDKConfig) {
     this.api = new WalletsApiClient(config);
     this.portalProvider = new PortalTatumProvider(this.api, config);
-    this.custodian = new CustodianApi(this.portalProvider, config);
+    this.custodian = new CustodianApi(this.api);
   }
 
   /**

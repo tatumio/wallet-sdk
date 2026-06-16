@@ -30,7 +30,7 @@ Tatum API key.
 The SDK is built on **multi-party computation (MPC)**. A wallet's private key is never
 assembled in one place. Instead it is split into a **2-of-2** scheme: one **client share**
 (which you store) and one **Tatum-held share**. Both are required to produce a signature, so
-losing one share alone never exposes the key. Backups work by *re-sharing* — deriving a new,
+losing one share alone never exposes the key. Backups work by _re-sharing_ — deriving a new,
 encryptable copy of a share without ever reconstructing the key.
 
 Each wallet holds **one signing share per curve**:
@@ -43,11 +43,11 @@ One generated wallet therefore covers both EVM and non-EVM chains; you pick the 
 
 ### Three usage surfaces
 
-| Surface | Auth | Use for |
-| --- | --- | --- |
-| `sdk.custodian.*` | Your Tatum `x-api-key` (auto-resolved to a custodian token) | Creating/listing end-user **clients**, minting session tokens, key eject. |
-| `sdk.initClient({ token }).*` | A client's token | Acting **on behalf of one end-user**: generate, sign, send, backup, recover. |
-| `sdk.api.request(...)` | Your Tatum `x-api-key` | Raw Tatum HTTP calls not yet wrapped by a typed method. |
+| Surface                       | Auth                   | Use for                                                                                    |
+| ----------------------------- | ---------------------- | ------------------------------------------------------------------------------------------ |
+| `sdk.custodian.*`             | Your Tatum `x-api-key` | Creating/listing end-user **clients**, minting session tokens, key eject, gas sponsorship.    |
+| `sdk.initClient({ token }).*` | A client's token       | Acting **on behalf of one end-user**: generate, sign, send, backup, recover.               |
+| `sdk.api.request(...)`        | Your Tatum `x-api-key` | Raw Tatum HTTP calls not yet wrapped by a typed method.                                    |
 
 A **client** is one end-user wallet holder under your custodian account. `initClient` accepts
 either of two token types returned when you create a client:
@@ -109,16 +109,16 @@ console.log(sent.transactionHash);
 
 ```ts
 interface WalletsSDKConfig {
-  apiKey: string;                    // required — your Tatum API key
-  baseUrl?: string;                  // default 'https://api.tatum.io'
-  headers?: Record<string, string>;  // extra headers on every request
-  fetch?: typeof fetch;              // custom fetch (tests, proxies, instrumentation)
+  apiKey: string; // required — your Tatum API key
+  baseUrl?: string; // default 'https://api.tatum.io'
+  headers?: Record<string, string>; // extra headers on every request
+  fetch?: typeof fetch; // custom fetch (tests, proxies, instrumentation)
 }
 ```
 
-Only `apiKey` is required. The custodian token and per-chain RPC URLs are resolved
-automatically from this key — you never pass them yourself (see
-[Sending assets](#sending-assets) for RPC details).
+Only `apiKey` is required. Custodian calls are authenticated with this key, and
+per-chain RPC URLs are resolved automatically from it — you never pass them
+yourself (see [Sending assets](#sending-assets) for RPC details).
 
 ---
 
@@ -130,29 +130,33 @@ Each enum value **is** the chain's CAIP-2 id, so it can be passed directly where
 expects one.
 
 ```ts
-import { WalletChain, WALLET_CHAINS, getWalletChainConfig } from "@tatumio/wallet-sdk";
+import {
+  WalletChain,
+  WALLET_CHAINS,
+  getWalletChainConfig,
+} from "@tatumio/wallet-sdk";
 
 const cfg = getWalletChainConfig(WalletChain.SOLANA_MAINNET);
 // → { chainId, curve: 'ED25519', requiresRpcUrl: false, tatumNetwork: 'solana-mainnet' }
 ```
 
-| `WalletChain` | CAIP-2 id | Curve | `requiresRpcUrl` |
-| --- | --- | --- | --- |
-| `ETHEREUM_MAINNET` | `eip155:1` | SECP256K1 | false |
-| `ETHEREUM_SEPOLIA` | `eip155:11155111` | SECP256K1 | false |
-| `MONAD_MAINNET` | `eip155:143` | SECP256K1 | false |
-| `ARBITRUM_MAINNET` | `eip155:42161` | SECP256K1 | false |
-| `AVALANCHE_MAINNET` | `eip155:43114` | SECP256K1 | false |
-| `BASE_MAINNET` | `eip155:8453` | SECP256K1 | false |
-| `OPTIMISM_MAINNET` | `eip155:10` | SECP256K1 | false |
-| `POLYGON_MAINNET` | `eip155:137` | SECP256K1 | false |
-| `CELO_MAINNET` | `eip155:42220` | SECP256K1 | true |
-| `BITCOIN_MAINNET` | `bip122:000000000019d6689c085ae165831e93-p2wpkh` | SECP256K1 | true |
-| `TRON_MAINNET` | `tron:mainnet` | SECP256K1 | true |
-| `SOLANA_MAINNET` | `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` | ED25519 | false |
-| `STELLAR_MAINNET` | `stellar:pubnet` | ED25519 | true |
+| `WalletChain`       | CAIP-2 id                                        | Curve     | `requiresRpcUrl` |
+| ------------------- | ------------------------------------------------ | --------- | ---------------- |
+| `ETHEREUM_MAINNET`  | `eip155:1`                                       | SECP256K1 | false            |
+| `ETHEREUM_SEPOLIA`  | `eip155:11155111`                                | SECP256K1 | false            |
+| `MONAD_MAINNET`     | `eip155:143`                                     | SECP256K1 | false            |
+| `ARBITRUM_MAINNET`  | `eip155:42161`                                   | SECP256K1 | false            |
+| `AVALANCHE_MAINNET` | `eip155:43114`                                   | SECP256K1 | false            |
+| `BASE_MAINNET`      | `eip155:8453`                                    | SECP256K1 | false            |
+| `OPTIMISM_MAINNET`  | `eip155:10`                                      | SECP256K1 | false            |
+| `POLYGON_MAINNET`   | `eip155:137`                                     | SECP256K1 | false            |
+| `CELO_MAINNET`      | `eip155:42220`                                   | SECP256K1 | true             |
+| `BITCOIN_MAINNET`   | `bip122:000000000019d6689c085ae165831e93-p2wpkh` | SECP256K1 | true             |
+| `TRON_MAINNET`      | `tron:mainnet`                                   | SECP256K1 | true             |
+| `SOLANA_MAINNET`    | `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp`        | ED25519   | false            |
+| `STELLAR_MAINNET`   | `stellar:pubnet`                                 | ED25519   | true             |
 
-`requiresRpcUrl` only signals whether the chain *needs* an RPC URL for enclave operations —
+`requiresRpcUrl` only signals whether the chain _needs_ an RPC URL for enclave operations —
 the SDK supplies one automatically regardless (see below). `WALLET_CHAINS[chain]` returns the
 full `WalletChainConfig`.
 
@@ -175,7 +179,9 @@ const created = await wallets.custodian.createClient({
 const page = await wallets.custodian.listClients({ query: { take: 100 } });
 
 // Fetch one client's wallets, addresses, and share-pair statuses.
-const detail = await wallets.custodian.getClient({ path: { clientId: created.id! } });
+const detail = await wallets.custodian.getClient({
+  path: { clientId: created.id! },
+});
 
 // Mint a fresh short-lived Client Session Token for an existing client.
 const session = await wallets.custodian.createClientSession({
@@ -184,7 +190,7 @@ const session = await wallets.custodian.createClientSession({
 });
 ```
 
-**When:** server-side onboarding and administration. To then act *as* a client, pass
+**When:** server-side onboarding and administration. To then act _as_ a client, pass
 `created.clientApiKey` or `session.clientSessionToken` to `initClient`.
 
 ### Generating a wallet
@@ -225,7 +231,7 @@ const sent = await client.sendAssets({
     share: shares.SECP256K1.share,
     chain: WalletChain.ETHEREUM_MAINNET,
     to: "0xRecipient...",
-    token: "NATIVE",          // or a contract/mint address, e.g. a USDC address
+    token: "NATIVE", // or a contract/mint address, e.g. a USDC address
     amount: "0.01",
   },
 });
@@ -251,8 +257,8 @@ await client.sendAssets({
 const signed = await client.sign({
   body: {
     share: shares.SECP256K1.share,
-    method: "personal_sign",                 // or 'eth_sendTransaction', 'sol_signTransaction', …
-    params: ["0x48656c6c6f"],                // method-dependent
+    method: "personal_sign", // or 'eth_sendTransaction', 'sol_signTransaction', …
+    params: ["0x48656c6c6f"], // method-dependent
     chainId: WalletChain.ETHEREUM_MAINNET,
     to: "0xRecipient...",
   },
@@ -323,8 +329,13 @@ await client.updateBackupSharePairs({
 re-share:
 
 ```ts
-const restore = async (curve: "SECP256K1" | "ED25519", backupSharePairId: string) => {
-  const { cipherText } = await client.getBackupShareCipherText({ path: { backupSharePairId } });
+const restore = async (
+  curve: "SECP256K1" | "ED25519",
+  backupSharePairId: string,
+) => {
+  const { cipherText } = await client.getBackupShareCipherText({
+    path: { backupSharePairId },
+  });
   return { share: await yourDecrypt(cipherText), id: backupSharePairId };
 };
 
@@ -381,7 +392,10 @@ For anything not yet wrapped by a typed method:
 
 ```ts
 // Raw Tatum HTTP call (x-api-key auth).
-const health = await wallets.api.request<{ ok: boolean }>({ method: "GET", path: "/health" });
+const health = await wallets.api.request<{ ok: boolean }>({
+  method: "GET",
+  path: "/health",
+});
 // Convenience verbs also exist: wallets.api.get/post/put/patch/delete.
 
 // Raw client REST operation by name.
@@ -403,61 +417,63 @@ applicable to an operation are typed away (e.g. a method with no body forbids `b
 
 ### `TatumWalletsSdk`
 
-| Member | Signature | Returns | When |
-| --- | --- | --- | --- |
-| `api` | `WalletsApiClient` | — | Raw Tatum HTTP escape hatch. |
-| `custodian` | `CustodianApi` | — | Custodian-scoped operations. |
-| `initClient` | `initClient(config: { token: string })` | `WalletsClient` | Act as one client. |
+| Member       | Signature                               | Returns         | When                         |
+| ------------ | --------------------------------------- | --------------- | ---------------------------- |
+| `api`        | `WalletsApiClient`                      | —               | Raw Tatum HTTP escape hatch. |
+| `custodian`  | `CustodianApi`                          | —               | Custodian-scoped operations. |
+| `initClient` | `initClient(config: { token: string })` | `WalletsClient` | Act as one client.           |
 
 ### Custodian — `sdk.custodian`
 
-| Method | Body / Path / Query | Returns | When |
-| --- | --- | --- | --- |
-| `createClient` | body `CreateClientBody?` | `CreateClientResponse` | Register a new client. |
-| `listClients` | query `ListClientsQuery?` | `ListClientsResponse` | Paginated client list. |
-| `getClient` | path `{ clientId }` | `ClientDetails` | One client's details. |
-| `createClientSession` | path `{ clientId }`, body `CreateClientSessionBody` | `CreateClientSessionResponse` | Mint a CST. |
-| `buildTransaction` | path `{ clientId, chain }`, body `BuildTransactionBody` | `BuildTransactionResponse` | Build unsigned tx for a client. |
-| `enableEject` | path `{ clientId }`, body `EnableEjectBody` | `EnableEjectResponse` | Authorize key eject. |
-| `getEjectableBackupShares` | path `{ clientId, walletId }` | `EjectableBackupShares` | Custodian-side eject shares. |
-| `request` | `(operationName, options?)` | `unknown` | Escape hatch by operation name. |
+| Method                     | Body / Path / Query                                             | Returns                       | When                                   |
+| -------------------------- | --------------------------------------------------------------- | ----------------------------- | -------------------------------------- |
+| `createClient`             | body `CreateClientBody?`                                        | `CreateClientResponse`        | Register a new client.                 |
+| `listClients`              | query `ListClientsQuery?`                                       | `ListClientsResponse`         | Paginated client list.                 |
+| `getClient`                | path `{ clientId }`                                             | `ClientDetails`               | One client's details.                  |
+| `createClientSession`      | path `{ clientId }`, body `CreateClientSessionBody`             | `CreateClientSessionResponse` | Mint a CST.                            |
+| `buildTransaction`         | path `{ clientId, chain }`, body `BuildTransactionBody`         | `BuildTransactionResponse`    | Build unsigned tx for a client.        |
+| `enableEject`              | path `{ clientId }`, body `EnableEjectBody`                     | `EnableEjectResponse`         | Authorize key eject.                   |
+| `getEjectableBackupShares` | path `{ clientId, walletId }`                                   | `EjectableBackupShares`       | Custodian-side eject shares.           |
+| `getGasSponsorshipChains`  | query `GetGasSponsorshipChainsQuery?` (`chains: WalletChain[]`) | `GasSponsorshipChain[]`       | List gas-sponsorship config per chain. |
+| `updateGasSponsorship`     | path `{ chain }`, body `UpdateGasSponsorshipBody`               | `GasSponsorshipChain`         | Set a chain's gas-allowance limit.     |
+| `request`                  | `(operationName, options?)`                                     | `unknown`                     | Escape hatch by operation name.        |
 
 ### Client REST — `sdk.initClient(...)`
 
-| Method | Body / Path / Query | Returns | When |
-| --- | --- | --- | --- |
-| `getClientDetails` | — | `ClientDetails` | This client's wallets/addresses/share statuses. |
-| `buildTransaction` | path `{ chain }`, body `BuildTransactionBody` | `BuildTransactionResponse` | Build unsigned tx; sign separately. |
-| `evaluateTransaction` | query `EvaluateTransactionQuery`, body `EvaluateTransactionBody` | `EvaluateTransactionResponse` | Simulate/validate before signing. |
-| `updateSigningSharePairs` | body `UpdateSigningSharePairsBody` | `void` | Confirm signing shares stored. |
-| `updateBackupSharePairs` | body `UpdateBackupSharePairsBody` | `void` | Final step of a backup. |
-| `storeEncryptedBackupShare` | path `{ backupSharePairId }`, body `StoreBackupShareBody` | `void` | Store one curve's ciphertext. |
-| `getBackupShareCipherText` | path `{ backupSharePairId }` | `BackupShareCipherTextResponse` | Read a stored ciphertext. |
-| `getEjectableBackupShares` | path `{ walletId }`, query `ClientEjectableBackupSharesQuery` | `ClientEjectableBackupSharesResponse` | Client-side eject shares. |
-| `completeEject` | path `{ walletId }` | `void` | Finalize an eject. |
-| `request` | `(operationName, options?)` | `unknown` | Client REST escape hatch. |
+| Method                      | Body / Path / Query                                              | Returns                               | When                                            |
+| --------------------------- | ---------------------------------------------------------------- | ------------------------------------- | ----------------------------------------------- |
+| `getClientDetails`          | —                                                                | `ClientDetails`                       | This client's wallets/addresses/share statuses. |
+| `buildTransaction`          | path `{ chain }`, body `BuildTransactionBody`                    | `BuildTransactionResponse`            | Build unsigned tx; sign separately.             |
+| `evaluateTransaction`       | query `EvaluateTransactionQuery`, body `EvaluateTransactionBody` | `EvaluateTransactionResponse`         | Simulate/validate before signing.               |
+| `updateSigningSharePairs`   | body `UpdateSigningSharePairsBody`                               | `void`                                | Confirm signing shares stored.                  |
+| `updateBackupSharePairs`    | body `UpdateBackupSharePairsBody`                                | `void`                                | Final step of a backup.                         |
+| `storeEncryptedBackupShare` | path `{ backupSharePairId }`, body `StoreBackupShareBody`        | `void`                                | Store one curve's ciphertext.                   |
+| `getBackupShareCipherText`  | path `{ backupSharePairId }`                                     | `BackupShareCipherTextResponse`       | Read a stored ciphertext.                       |
+| `getEjectableBackupShares`  | path `{ walletId }`, query `ClientEjectableBackupSharesQuery`    | `ClientEjectableBackupSharesResponse` | Client-side eject shares.                       |
+| `completeEject`             | path `{ walletId }`                                              | `void`                                | Finalize an eject.                              |
+| `request`                   | `(operationName, options?)`                                      | `unknown`                             | Client REST escape hatch.                       |
 
 ### Enclave / MPC — `sdk.initClient(...)`
 
-| Method | Body / Path | Returns | When |
-| --- | --- | --- | --- |
-| `generateWallet` | — | `GenerateWalletResponse` (`CurveShares`) | New MPC wallet (per-curve shares). |
-| `backupWallet` | body `BackupWalletBody` | `BackupWalletResponse` (`CurveShares`) | Produce backup shares. |
-| `recoverWallet` | body `RecoverWalletBody` | `RecoverWalletResponse` (`CurveShares`) | Reconstruct signing shares. |
-| `sign` | body `SignBody` | `SignResponse` | Sign (and submit) via an RPC method. |
-| `rawSign` | path `{ curve }`, body `RawSignBody` | `RawSignResponse` | Raw-sign a hex digest. |
-| `sendAssets` | body `SendAssetsBody` | `SendAssetsResponse` | Build + sign + broadcast a transfer. |
-| `enclaveRequest` | `(operationName, options?)` | `unknown` | Enclave escape hatch (auto `rpcUrl`). |
+| Method           | Body / Path                          | Returns                                  | When                                  |
+| ---------------- | ------------------------------------ | ---------------------------------------- | ------------------------------------- |
+| `generateWallet` | —                                    | `GenerateWalletResponse` (`CurveShares`) | New MPC wallet (per-curve shares).    |
+| `backupWallet`   | body `BackupWalletBody`              | `BackupWalletResponse` (`CurveShares`)   | Produce backup shares.                |
+| `recoverWallet`  | body `RecoverWalletBody`             | `RecoverWalletResponse` (`CurveShares`)  | Reconstruct signing shares.           |
+| `sign`           | body `SignBody`                      | `SignResponse`                           | Sign (and submit) via an RPC method.  |
+| `rawSign`        | path `{ curve }`, body `RawSignBody` | `RawSignResponse`                        | Raw-sign a hex digest.                |
+| `sendAssets`     | body `SendAssetsBody`                | `SendAssetsResponse`                     | Build + sign + broadcast a transfer.  |
+| `enclaveRequest` | `(operationName, options?)`          | `unknown`                                | Enclave escape hatch (auto `rpcUrl`). |
 
 ### Tatum HTTP client — `sdk.api`
 
-| Method | Signature |
-| --- | --- |
-| `get` | `get<T>(path, options?)` |
-| `post` | `post<T>(path, body?, options?)` |
-| `put` | `put<T>(path, body?, options?)` |
-| `patch` | `patch<T>(path, body?, options?)` |
-| `delete` | `delete<T>(path, options?)` |
+| Method    | Signature                                |
+| --------- | ---------------------------------------- |
+| `get`     | `get<T>(path, options?)`                 |
+| `post`    | `post<T>(path, body?, options?)`         |
+| `put`     | `put<T>(path, body?, options?)`          |
+| `patch`   | `patch<T>(path, body?, options?)`        |
+| `delete`  | `delete<T>(path, options?)`              |
 | `request` | `request<T>(options: ApiRequestOptions)` |
 
 `ApiRequestOptions` requires `path` and allows `method`, `query`, `body`, `headers`, `signal`.
@@ -476,8 +492,14 @@ interface WalletsSDKConfig {
 
 type Curve = "SECP256K1" | "ED25519";
 
-interface WalletShare { share: string; id: string }
-interface CurveShares { SECP256K1: WalletShare; ED25519: WalletShare }
+interface WalletShare {
+  share: string;
+  id: string;
+}
+interface CurveShares {
+  SECP256K1: WalletShare;
+  ED25519: WalletShare;
+}
 
 // generate / backup / recover all return CurveShares
 type GenerateWalletResponse = CurveShares;
@@ -492,15 +514,15 @@ interface CreateClientResponse {
 }
 
 interface SignBody {
-  method: string;            // e.g. 'eth_sendTransaction', 'personal_sign'
+  method: string; // e.g. 'eth_sendTransaction', 'personal_sign'
   params: object | unknown[];
   share: string;
   chainId: WalletChain;
   to: string;
-  rpcUrl?: string;           // auto-injected when omitted
+  rpcUrl?: string; // auto-injected when omitted
   metadataStr?: string;
-  sponsorGas?: boolean;      // default true
-  presignature?: string;     // mutually exclusive with presignatureId
+  sponsorGas?: boolean; // default true
+  presignature?: string; // mutually exclusive with presignatureId
   presignatureId?: string;
 }
 
@@ -508,31 +530,47 @@ interface SendAssetsBody {
   share: string;
   chain: WalletChain;
   to: string;
-  token: string;             // contract/mint address or 'NATIVE'
+  token: string; // contract/mint address or 'NATIVE'
   amount: string;
-  rpcUrl?: string;           // auto-injected when omitted
+  rpcUrl?: string; // auto-injected when omitted
   nonce?: string;
   metadataStr?: string;
-  sponsorGas?: boolean;      // default true
+  sponsorGas?: boolean; // default true
   presignature?: string;
   presignatureId?: string;
 }
 
 interface SendAssetsResponse {
   transactionHash: string;
-  metadata: { amount: string; rawAmount: string; tokenAddress: string; tokenDecimals: number };
+  metadata: {
+    amount: string;
+    rawAmount: string;
+    tokenAddress: string;
+    tokenDecimals: number;
+  };
 }
 
 interface EvaluateTransactionBody {
-  network: string;           // 'ethereum', 'solana', …
-  transaction: { toAddress: string; value: string; data?: string;
-                 token?: { address: string; decimals: number; symbol: string } };
+  network: string; // 'ethereum', 'solana', …
+  transaction: {
+    toAddress: string;
+    value: string;
+    data?: string;
+    token?: { address: string; decimals: number; symbol: string };
+  };
   operationType?: "validation" | "simulation" | "all"; // default 'all'
 }
 
-interface EnableEjectBody { walletId: string; ejectableUntil?: string } // ISO date-time
+interface EnableEjectBody {
+  walletId: string;
+  ejectableUntil?: string;
+} // ISO date-time
 
-type EjectableBackupSharesBackupMethod = "GDRIVE" | "ICLOUD" | "PASSWORD" | "PASSKEY";
+type EjectableBackupSharesBackupMethod =
+  | "GDRIVE"
+  | "ICLOUD"
+  | "PASSWORD"
+  | "PASSKEY";
 ```
 
 `ClientDetails` (returned by `getClient` / `getClientDetails`) carries `wallets[]`, each with
@@ -554,7 +592,11 @@ Any non-2xx response throws a `WalletsApiError`:
 import { WalletsApiError } from "@tatumio/wallet-sdk";
 
 try {
-  await client.sendAssets({ body: { /* … */ } });
+  await client.sendAssets({
+    body: {
+      /* … */
+    },
+  });
 } catch (err) {
   if (err instanceof WalletsApiError) {
     console.error(err.status, err.statusText, err.body);
@@ -563,12 +605,12 @@ try {
 }
 ```
 
-| Property | Type | Notes |
-| --- | --- | --- |
-| `status` | `number` | HTTP status code. |
-| `statusText` | `string \| undefined` | HTTP status text. |
-| `body` | `unknown` | Parsed response body (JSON when available). |
-| `headers` | `Headers \| undefined` | Response headers. |
+| Property     | Type                   | Notes                                       |
+| ------------ | ---------------------- | ------------------------------------------- |
+| `status`     | `number`               | HTTP status code.                           |
+| `statusText` | `string \| undefined`  | HTTP status text.                           |
+| `body`       | `unknown`              | Parsed response body (JSON when available). |
+| `headers`    | `Headers \| undefined` | Response headers.                           |
 
 ---
 
@@ -578,7 +620,7 @@ try {
   documented return type, so you usually omit the type argument. Override it (e.g.
   `client.request<MyShape>(...)`) when using an escape hatch.
 - **Uniform request shape.** Every typed method takes `{ path?, query?, body?, headers?,
-  signal? }`. `path` is a map of path parameters (e.g. `{ clientId }`), interpolated into the
+signal? }`. `path` is a map of path parameters (e.g. `{ clientId }`), interpolated into the
   operation's URL template; missing path params throw before any request is sent, and values
   are URL-encoded.
 - **Cancellation.** Pass an `AbortSignal` via `signal` to cancel in-flight requests.
