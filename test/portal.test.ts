@@ -245,8 +245,14 @@ describe('Portal-backed Tatum Wallets SDK', () => {
 
     expect(String(calls[0]?.input)).toBe('https://mpc-client.portalhq.io/v1/generate');
     expect(calls[0]?.init).toMatchObject({ method: 'POST', body: JSON.stringify({}) });
-    expect(String(calls[1]?.input)).toBe('https://mpc-client.portalhq.io/v1/backup');
-    expect(calls[1]?.init).toMatchObject({
+    // generateWallet meters wallet-creation usage against Tatum before returning.
+    expect(String(calls[1]?.input)).toBe('https://api.tatum.io/v4/wallets/usage/wallet');
+    expect(calls[1]?.init?.headers).toMatchObject({
+      'x-api-key': 'tatum-api-key',
+      authorization: 'Bearer portal-client-token'
+    });
+    expect(String(calls[2]?.input)).toBe('https://mpc-client.portalhq.io/v1/backup');
+    expect(calls[2]?.init).toMatchObject({
       method: 'POST',
       body: JSON.stringify({ generateResponse: '{"ok":true}' })
     });
@@ -481,9 +487,15 @@ describe('Portal-backed Tatum Wallets SDK', () => {
         rpcUrl: 'https://ethereum-mainnet.gateway.tatum.io/tatum-api-key'
       })
     );
-    expect(String(calls[2]?.input)).toBe('https://mpc-client.portalhq.io/v1/assets/send');
-    expect(calls[2]?.init?.headers).toMatchObject({ 'idempotency-key': 'idem-2' });
-    expect(calls[2]?.init?.body).toBe(
+    // sign meters transaction usage against Tatum before sendAssets runs.
+    expect(String(calls[2]?.input)).toBe('https://api.tatum.io/v4/wallets/usage/transaction');
+    expect(calls[2]?.init?.headers).toMatchObject({
+      'x-api-key': 'tatum-api-key',
+      authorization: 'Bearer portal-client-token'
+    });
+    expect(String(calls[3]?.input)).toBe('https://mpc-client.portalhq.io/v1/assets/send');
+    expect(calls[3]?.init?.headers).toMatchObject({ 'idempotency-key': 'idem-2' });
+    expect(calls[3]?.init?.body).toBe(
       JSON.stringify({
         share: 'share',
         chain: 'eip155:1',
@@ -493,6 +505,33 @@ describe('Portal-backed Tatum Wallets SDK', () => {
         rpcUrl: 'https://caller.rpc'
       })
     );
+    // sendAssets meters transaction usage too.
+    expect(String(calls[4]?.input)).toBe('https://api.tatum.io/v4/wallets/usage/transaction');
+  });
+
+  it('does not let a usage-metering failure break the signing operation', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      apiKey: 'tatum-api-key',
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        // Fail only the usage-metering call; the enclave sign must still succeed.
+        if (String(input).includes('/v4/wallets/usage/')) {
+          return jsonResponse({ message: 'metering down' }, { status: 500 });
+        }
+        return jsonResponse({ data: '0xsig' });
+      }
+    });
+    const client = sdk.initClient({ token: 'portal-client-token' });
+
+    const result = await client.rawSign({
+      path: { curve: 'SECP256K1' },
+      body: { params: '7369676e2074686973', share: 'share' }
+    });
+
+    expect(result).toEqual({ data: '0xsig' });
+    expect(String(calls[0]?.input)).toBe('https://mpc-client.portalhq.io/v1/raw/sign/SECP256K1');
+    expect(String(calls[1]?.input)).toBe('https://api.tatum.io/v4/wallets/usage/transaction');
   });
 });
 

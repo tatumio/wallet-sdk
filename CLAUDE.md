@@ -36,7 +36,7 @@ src/
 Two HTTP clients exist, differing in **base URL** and **auth header** — the key thing to keep straight:
 
 1. **Portal APIs** (`PortalApiClient` in `portal/transport.ts`) — base `https://api.portalhq.io/api/v3` (and enclave base `https://mpc-client.portalhq.io`), auth via `Authorization: Bearer <token>`. Wrapped per layer: `CustodianApi` (custodian-scoped), `ClientApi` (client-scoped REST), `EnclaveApi` (MPC share ops). This is the SDK's product surface.
-2. **Tatum client** (`WalletsApiClient` in `tatum/api-client.ts`) — base `https://api.tatum.io`, auth via `x-api-key`. No generated wrappers; it exists only so `PortalTatumProvider` can fetch the Portal custodian token from Tatum, and as the `wallets.api.request(...)` escape hatch for raw Tatum calls.
+2. **Tatum client** (`WalletsApiClient` in `tatum/api-client.ts`) — base `https://api.tatum.io`, auth via `x-api-key`. No generated wrappers; it exists so `PortalTatumProvider` can fetch the Portal custodian token from Tatum and meter wallet/transaction usage (`/v4/wallets/usage/*`), and as the `wallets.api.request(...)` escape hatch for raw Tatum calls.
 
 > **Temporarily removed:** the generated `BlockchainDataApi` and `NotificationsApi` Tatum surfaces were deleted to keep the SDK Portal-focused. They will be re-added later — don't treat their absence as permanent, and re-introduce them following the operation-map pattern when needed.
 
@@ -66,7 +66,9 @@ The Portal layer classes are hand-written and follow this pattern. (When the Tat
 
 `PortalTatumProvider` (`tatum/provider.ts`) supplies the Portal custodian token and per-chain RPC URLs. `getCustodianToken()` fetches `GET /v4/wallets/custodian-api-key` via the Tatum client, returns `portalCustodianApiKey`, throws if the Tatum key isn't authorized for Portal, and memoizes the result (resetting on failure). `getRpcUrl(chain)` builds the **static Tatum RPC gateway** URL `https://<network>.gateway.tatum.io/<apiKey>` — `<network>` is the chain's `tatumRpcNetwork` from `WALLET_CHAINS` (`chains.ts`), `<apiKey>` is the SDK's Tatum key — and throws for unsupported chains. Keep this resolution in the provider; don't leak Portal token/RPC fetching into the API classes.
 
-`EnclaveApi.request` (reached via `WalletsClient.enclaveRequest` or any enclave method) auto-injects `rpcUrl` into the body (resolved from `body.chain`/`body.chainId` via the provider) unless one is already present.
+The provider also owns **usage metering**: `trackWalletCreation(clientToken)` and `trackTransaction(clientToken)` POST to `/v4/wallets/usage/wallet` and `/v4/wallets/usage/transaction` via the Tatum client (the SDK's `x-api-key` plus the client's Portal token as `Authorization: Bearer`, which the metering endpoints require). Both are **best-effort** — failures are swallowed so metering never breaks the caller's operation.
+
+`EnclaveApi.request` (reached via `WalletsClient.enclaveRequest` or any enclave method) auto-injects `rpcUrl` into the body (resolved from `body.chain`/`body.chainId` via the provider) unless one is already present. After a successful enclave op, the typed methods meter usage via the provider: `generateWallet` → `trackWalletCreation`; `sign`/`rawSign`/`sendAssets` → `trackTransaction`. (The `enclaveRequest` escape hatch does **not** meter.)
 
 ### Entry points
 
