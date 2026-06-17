@@ -31,7 +31,7 @@ export interface WalletChainConfig {
   /** Whether an explicit `rpcUrl` is required for enclave operations on this chain. */
   requiresRpcUrl: boolean;
   /** Tatum RPC gateway network slug (`<slug>.gateway.tatum.io`). */
-  tatumRpcNetwork: string;
+  tatumNetwork: string;
 }
 
 /** Per-chain configuration, keyed by {@link WalletChain}. */
@@ -40,79 +40,79 @@ export const WALLET_CHAINS: Record<WalletChain, WalletChainConfig> = {
     chainId: WalletChain.MONAD_MAINNET,
     curve: 'SECP256K1',
     requiresRpcUrl: false,
-    tatumRpcNetwork: 'monad-mainnet'
+    tatumNetwork: 'monad-mainnet'
   },
   [WalletChain.ETHEREUM_MAINNET]: {
     chainId: WalletChain.ETHEREUM_MAINNET,
     curve: 'SECP256K1',
     requiresRpcUrl: false,
-    tatumRpcNetwork: 'ethereum-mainnet'
+    tatumNetwork: 'ethereum-mainnet'
   },
   [WalletChain.ETHEREUM_SEPOLIA]: {
     chainId: WalletChain.ETHEREUM_SEPOLIA,
     curve: 'SECP256K1',
     requiresRpcUrl: false,
-    tatumRpcNetwork: 'ethereum-sepolia'
+    tatumNetwork: 'ethereum-sepolia'
   },
   [WalletChain.SOLANA_MAINNET]: {
     chainId: WalletChain.SOLANA_MAINNET,
     curve: 'ED25519',
     requiresRpcUrl: false,
-    tatumRpcNetwork: 'solana-mainnet'
+    tatumNetwork: 'solana-mainnet'
   },
   [WalletChain.STELLAR_MAINNET]: {
     chainId: WalletChain.STELLAR_MAINNET,
     curve: 'ED25519',
     requiresRpcUrl: true,
-    tatumRpcNetwork: 'stellar-mainnet'
+    tatumNetwork: 'stellar-mainnet'
   },
   [WalletChain.TRON_MAINNET]: {
     chainId: WalletChain.TRON_MAINNET,
     curve: 'SECP256K1',
     requiresRpcUrl: true,
-    tatumRpcNetwork: 'tron-mainnet'
+    tatumNetwork: 'tron-mainnet'
   },
   [WalletChain.BITCOIN_MAINNET]: {
     chainId: WalletChain.BITCOIN_MAINNET,
     curve: 'SECP256K1',
     requiresRpcUrl: true,
-    tatumRpcNetwork: 'bitcoin-mainnet'
+    tatumNetwork: 'bitcoin-mainnet'
   },
   [WalletChain.ARBITRUM_MAINNET]: {
     chainId: WalletChain.ARBITRUM_MAINNET,
     curve: 'SECP256K1',
     requiresRpcUrl: false,
-    tatumRpcNetwork: 'arb-one-mainnet'
+    tatumNetwork: 'arb-one-mainnet'
   },
   [WalletChain.AVALANCHE_MAINNET]: {
     chainId: WalletChain.AVALANCHE_MAINNET,
     curve: 'SECP256K1',
     requiresRpcUrl: false,
-    tatumRpcNetwork: 'avax-mainnet'
+    tatumNetwork: 'avax-mainnet'
   },
   [WalletChain.BASE_MAINNET]: {
     chainId: WalletChain.BASE_MAINNET,
     curve: 'SECP256K1',
     requiresRpcUrl: false,
-    tatumRpcNetwork: 'base-mainnet'
+    tatumNetwork: 'base-mainnet'
   },
   [WalletChain.OPTIMISM_MAINNET]: {
     chainId: WalletChain.OPTIMISM_MAINNET,
     curve: 'SECP256K1',
     requiresRpcUrl: false,
-    tatumRpcNetwork: 'optimism-mainnet'
+    tatumNetwork: 'optimism-mainnet'
   },
   [WalletChain.POLYGON_MAINNET]: {
     chainId: WalletChain.POLYGON_MAINNET,
     curve: 'SECP256K1',
     requiresRpcUrl: false,
-    tatumRpcNetwork: 'polygon-mainnet'
+    tatumNetwork: 'polygon-mainnet'
   },
   [WalletChain.CELO_MAINNET]: {
     chainId: WalletChain.CELO_MAINNET,
     curve: 'SECP256K1',
     requiresRpcUrl: true,
-    tatumRpcNetwork: 'celo-mainnet'
+    tatumNetwork: 'celo-mainnet'
   }
 };
 

@@ -53,8 +53,10 @@ export class EnclaveApi {
     return client.request<TResponse>(requestOptions);
   }
 
-  generateWallet<TResponse = GenerateWalletResponse>(options?: PortalRequestOptions): Promise<TResponse> {
-    return this.request<TResponse>('generateWallet', { ...options, body: {} });
+  async generateWallet<TResponse = GenerateWalletResponse>(options?: PortalRequestOptions): Promise<TResponse> {
+    const result = await this.request<TResponse>('generateWallet', { ...options, body: {} });
+    await this.provider.trackWalletCreation(this.token);
+    return result;
   }
 
   backupWallet<TResponse = BackupWalletResponse>(
@@ -69,20 +71,26 @@ export class EnclaveApi {
     return this.request<TResponse>('recoverWallet', options);
   }
 
-  sign<TResponse = SignResponse>(options: PortalRequestOptions<SignBody>): Promise<TResponse> {
-    return this.request<TResponse>('sign', options);
+  async sign<TResponse = SignResponse>(options: PortalRequestOptions<SignBody>): Promise<TResponse> {
+    const result = await this.request<TResponse>('sign', options);
+    await this.provider.trackTransaction(this.token);
+    return result;
   }
 
-  rawSign<TResponse = RawSignResponse>(
+  async rawSign<TResponse = RawSignResponse>(
     options: PortalRequestOptions<RawSignBody, { curve: Curve }>
   ): Promise<TResponse> {
-    return this.request<TResponse>('rawSign', options);
+    const result = await this.request<TResponse>('rawSign', options);
+    await this.provider.trackTransaction(this.token);
+    return result;
   }
 
-  sendAssets<TResponse = SendAssetsResponse>(
+  async sendAssets<TResponse = SendAssetsResponse>(
     options: PortalRequestOptions<SendAssetsBody>
   ): Promise<TResponse> {
-    return this.request<TResponse>('sendAssets', options);
+    const result = await this.request<TResponse>('sendAssets', options);
+    await this.provider.trackTransaction(this.token);
+    return result;
   }
 
   private async withResolvedRpcUrl(body: unknown): Promise<unknown> {
