@@ -308,17 +308,14 @@ describe('Portal-backed Tatum Wallets SDK', () => {
       apiKey: 'tatum-api-key',
       fetch: async (input, init) => {
         calls.push({ input, init });
-        return jsonResponse({ evaluation: { riskScore: 0.2, classification: 'LOW_RISK' } });
+        return jsonResponse({ chain: 'eip155:1', validation: { classification: 'Benign' } });
       }
     });
     const client = sdk.initClient({ token: 'portal-client-token' });
 
     await client.evaluateTransaction({
       query: { chainId: WalletChain.ETHEREUM_MAINNET },
-      body: {
-        network: 'ethereum',
-        transaction: { toAddress: '0xabc', value: '10000000000000000' }
-      }
+      body: { to: '0xabc', value: '0x2386f26fc10000', operationType: 'all' }
     });
 
     expect(String(calls[0]?.input)).toBe(
@@ -326,10 +323,7 @@ describe('Portal-backed Tatum Wallets SDK', () => {
     );
     expect(calls[0]?.init).toMatchObject({
       method: 'POST',
-      body: JSON.stringify({
-        network: 'ethereum',
-        transaction: { toAddress: '0xabc', value: '10000000000000000' }
-      })
+      body: JSON.stringify({ to: '0xabc', value: '0x2386f26fc10000', operationType: 'all' })
     });
     expect(calls[0]?.init?.headers).toMatchObject({ authorization: 'Bearer portal-client-token' });
   });

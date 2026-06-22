@@ -2,46 +2,66 @@ import type { WalletChain } from '../../chains.js';
 import type { EjectableBackupShares } from './shared.js';
 
 // ── evaluate-transaction (simulate / validate) ──────────────────────
-export interface EvaluateTransactionToken {
-  address: string;
-  decimals: number;
-  symbol: string;
-}
-export interface EvaluateTransactionInput {
-  toAddress: string;
-  /** Native amount in base units (wei for EVM, lamports for Solana). */
-  value: string;
-  /** Calldata for contract interactions. */
-  data?: string;
-  /** Present when interacting with a token rather than the native asset. */
-  token?: EvaluateTransactionToken;
-}
+// Which checks to run. Defaults to 'all' server-side.
 export type EvaluateTransactionOperationType = 'validation' | 'simulation' | 'all';
-export interface EvaluateTransactionBody {
-  /** Network name, e.g. 'ethereum', 'solana'. */
-  network: string;
-  transaction: EvaluateTransactionInput;
-  /** Defaults to 'all' server-side. */
+
+/** EVM (EIP-155) transaction fields. Mirrors the JSON-RPC tx object. */
+export interface EvaluateTransactionEvmBody {
+  /** Target contract or recipient address. */
+  to: string;
+  /** Encoded calldata (hex). */
+  data?: string;
+  /** Native value in wei (hex). */
+  value?: string;
+  gas?: string;
+  gasPrice?: string;
+  maxFeePerGas?: string;
+  maxPriorityFeePerGas?: string;
   operationType?: EvaluateTransactionOperationType;
 }
+
+/** Solana transaction(s) to evaluate. */
+export interface EvaluateTransactionSolanaBody {
+  /** Base58-encoded Solana transactions. */
+  transactions: string[];
+  operationType?: EvaluateTransactionOperationType;
+}
+
+/** oneOf: EVM tx fields or a Solana `transactions` array, selected by `chainId`. */
+export type EvaluateTransactionBody = EvaluateTransactionEvmBody | EvaluateTransactionSolanaBody;
+
 // `type` (not `interface`) so it is assignable to QueryParams (Record<string, ...>).
 export type EvaluateTransactionQuery = {
+  /** CAIP-2 chain id, e.g. `eip155:1`. */
   chainId: WalletChain;
 };
-export interface TransactionBalanceChange {
-  token?: EvaluateTransactionToken;
-  amount?: string;
-  type?: 'IN' | 'OUT';
-}
-export interface TransactionEvaluation {
-  balanceChanges?: TransactionBalanceChange[];
-  riskScore?: number;
+
+/** Static validation result (present when `operationType` includes validation). */
+export interface EvaluateTransactionValidation {
+  status?: string;
+  resultType?: string;
+  description?: string;
+  reason?: string;
   classification?: string;
+  features?: unknown[];
 }
-/** Shape varies by chain; EVM returns `evaluation`, Bitcoin returns `unsignedTx`. */
+
+/** Simulation result (present when `operationType` includes simulation). */
+export interface EvaluateTransactionSimulation {
+  status?: string;
+  assetsDiffs?: unknown[];
+  totalUsdDiff?: unknown;
+  exposures?: unknown[];
+  totalUsdExposure?: unknown;
+  addressDetails?: unknown;
+  accountSummary?: unknown;
+}
+
 export interface EvaluateTransactionResponse {
-  evaluation?: TransactionEvaluation;
-  unsignedTx?: { data?: string; recentBlockhash?: string };
+  /** CAIP-2 chain id the evaluation ran against. */
+  chain: string;
+  validation?: EvaluateTransactionValidation;
+  simulation?: EvaluateTransactionSimulation;
 }
 
 // ── client-scoped share-pair + eject (api.portalhq.io/api/v3, /clients/me/...) ──
