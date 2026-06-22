@@ -1,6 +1,6 @@
 {
   "name": "@tatumio/wallet-sdk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "TypeScript SDK for Tatum-hosted MPC wallets — wallet generation, signing, sending, backup/recovery, and custodian/client management.",
   "license": "MIT",
   "author": "Tatum",
