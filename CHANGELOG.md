@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.2.0...wallet-sdk-v0.2.1) (2026-06-22)
+
+
+### Bug Fixes
+
+* align evaluateTransaction with API schema ([#7](https://github.com/tatumio/wallet-sdk/issues/7)) ([448bc7f](https://github.com/tatumio/wallet-sdk/commit/448bc7f11914590649146960f4103babfa1f4ea4))
+
 ## [0.2.0](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.1.0...wallet-sdk-v0.2.0) (2026-06-22)
 
 
