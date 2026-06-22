@@ -45,7 +45,7 @@ One generated wallet therefore covers both EVM and non-EVM chains; you pick the 
 
 | Surface                       | Auth                   | Use for                                                                                    |
 | ----------------------------- | ---------------------- | ------------------------------------------------------------------------------------------ |
-| `sdk.custodian.*`             | Your Tatum `x-api-key` | Creating/listing end-user **clients**, minting session tokens, key eject, gas sponsorship.    |
+| `sdk.custodian.*`             | Your Tatum `x-api-key` | Creating/listing end-user **clients**, minting session tokens, key eject, gas sponsorship. |
 | `sdk.initClient({ token }).*` | A client's token       | Acting **on behalf of one end-user**: generate, sign, send, backup, recover.               |
 | `sdk.api.request(...)`        | Your Tatum `x-api-key` | Raw Tatum HTTP calls not yet wrapped by a typed method.                                    |
 
@@ -383,7 +383,7 @@ const { data } = await client.getEjectableBackupShares({
 // client backup share (same key you used at backup time).
 const clientShare = await yourDecrypt(data.encryptedClientBackupShare);
 
-// Reconstruct the full private key off Portal.
+// Reconstruct the full private key.
 const privateKey = await client.reconstructPrivateKey({
   curve: "SECP256K1", // or "ED25519"
   clientShare,
@@ -449,19 +449,19 @@ applicable to an operation are typed away (e.g. a method with no body forbids `b
 
 ### Client REST — `sdk.initClient(...)`
 
-| Method                      | Body / Path / Query                                              | Returns                               | When                                            |
-| --------------------------- | ---------------------------------------------------------------- | ------------------------------------- | ----------------------------------------------- |
-| `getClientDetails`          | —                                                                | `ClientDetails`                       | This client's wallets/addresses/share statuses. |
-| `buildTransaction`          | path `{ chain }`, body `BuildTransactionBody`                    | `BuildTransactionResponse`            | Build unsigned tx; sign separately.             |
-| `evaluateTransaction`       | query `EvaluateTransactionQuery`, body `EvaluateTransactionBody` | `EvaluateTransactionResponse`         | Simulate/validate before signing.               |
-| `updateSigningSharePairs`   | body `UpdateSigningSharePairsBody`                               | `void`                                | Confirm signing shares stored.                  |
-| `updateBackupSharePairs`    | body `UpdateBackupSharePairsBody`                                | `void`                                | Final step of a backup.                         |
-| `storeEncryptedBackupShare` | path `{ backupSharePairId }`, body `StoreBackupShareBody`        | `void`                                | Store one curve's ciphertext.                   |
-| `getBackupShareCipherText`  | path `{ backupSharePairId }`                                     | `BackupShareCipherTextResponse`       | Read a stored ciphertext.                       |
-| `getEjectableBackupShares`  | path `{ walletId }`, query `ClientEjectableBackupSharesQuery`    | `ClientEjectableBackupSharesResponse` | Client-side eject shares.                       |
-| `completeEject`             | path `{ walletId }`                                              | `void`                                | Finalize an eject.                              |
+| Method                      | Body / Path / Query                                              | Returns                               | When                                                          |
+| --------------------------- | ---------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------- |
+| `getClientDetails`          | —                                                                | `ClientDetails`                       | This client's wallets/addresses/share statuses.               |
+| `buildTransaction`          | path `{ chain }`, body `BuildTransactionBody`                    | `BuildTransactionResponse`            | Build unsigned tx; sign separately.                           |
+| `evaluateTransaction`       | query `EvaluateTransactionQuery`, body `EvaluateTransactionBody` | `EvaluateTransactionResponse`         | Simulate/validate before signing.                             |
+| `updateSigningSharePairs`   | body `UpdateSigningSharePairsBody`                               | `void`                                | Confirm signing shares stored.                                |
+| `updateBackupSharePairs`    | body `UpdateBackupSharePairsBody`                                | `void`                                | Final step of a backup.                                       |
+| `storeEncryptedBackupShare` | path `{ backupSharePairId }`, body `StoreBackupShareBody`        | `void`                                | Store one curve's ciphertext.                                 |
+| `getBackupShareCipherText`  | path `{ backupSharePairId }`                                     | `BackupShareCipherTextResponse`       | Read a stored ciphertext.                                     |
+| `getEjectableBackupShares`  | path `{ walletId }`, query `ClientEjectableBackupSharesQuery`    | `ClientEjectableBackupSharesResponse` | Client-side eject shares.                                     |
+| `completeEject`             | path `{ walletId }`                                              | `void`                                | Finalize an eject.                                            |
 | `reconstructPrivateKey`     | params `{ curve, clientShare, custodianShare }`                  | `Promise<string>`                     | Rebuild the full private key from ejectable shares (offline). |
-| `request`                   | `(operationName, options?)`                                      | `unknown`                             | Client REST escape hatch.                       |
+| `request`                   | `(operationName, options?)`                                      | `unknown`                             | Client REST escape hatch.                                     |
 
 ### Enclave / MPC — `sdk.initClient(...)`
 
