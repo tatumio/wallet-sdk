@@ -4,6 +4,7 @@ export { CustodianApi, custodianOperations } from './portal/custodian.js';
 export { clientOperations } from './portal/client-api.js';
 export { enclaveOperations } from './portal/enclave-api.js';
 export { WalletsClient } from './portal/wallets-client.js';
+export { reconstructPrivateKey } from './eject/index.js';
 export { TatumWalletsSdk } from './sdk.js';
 export { WalletsApiClient } from './tatum/api-client.js';
 export type { WalletChainConfig } from './chains.js';
@@ -11,6 +12,7 @@ export type { CustodianOperation, CustodianRequestOptions } from './portal/custo
 export type { ClientOperation } from './portal/client-api.js';
 export type { EnclaveOperation } from './portal/enclave-api.js';
 export type { InitClientConfig, WalletsClientRequestOptions } from './portal/wallets-client.js';
+export type { ReconstructPrivateKeyParams, ShareInput } from './eject/index.js';
 export type { PathParamValue } from './path.js';
 export type {
   ApiErrorOptions,

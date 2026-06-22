@@ -1,5 +1,7 @@
 import { ClientApi } from './client-api.js';
 import { EnclaveApi } from './enclave-api.js';
+import { reconstructPrivateKey } from '../eject/index.js';
+import type { ReconstructPrivateKeyParams } from '../eject/index.js';
 import type { ClientOperation } from './client-api.js';
 import type { EnclaveOperation } from './enclave-api.js';
 import type { Curve } from './types/index.js';
@@ -155,6 +157,16 @@ export class WalletsClient {
     options: PortalRequestOptions<never, { walletId: string }>
   ): Promise<TResponse> {
     return this.clientApi.completeEject<TResponse>(options);
+  }
+
+  /**
+   * Reconstruct this wallet's full private key from its ejectable backup shares.
+   * Pure and network-free: decrypt `encryptedClientBackupShare` yourself first,
+   * then pass it with the `custodianBackupShare` from {@link getEjectableBackupShares}.
+   * Returns hex (SECP256K1) or Base58 (ED25519).
+   */
+  reconstructPrivateKey(params: ReconstructPrivateKeyParams): Promise<string> {
+    return reconstructPrivateKey(params);
   }
 
   // ── enclave MPC layer ──────────────────────────────────────────────
