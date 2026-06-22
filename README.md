@@ -99,11 +99,8 @@ Before signing, you can simulate/validate a transaction (balance changes, risk s
 ```ts
 const evaluation = await client.evaluateTransaction({
   query: { chainId: WalletChain.ETHEREUM_MAINNET },
-  body: {
-    network: "ethereum",
-    transaction: { toAddress: "0x...", value: "10000000000000000" },
-  },
-}); // typed as EvaluateTransactionResponse
+  body: { to: "0x...", value: "0x2386f26fc10000", operationType: "all" },
+}); // typed as EvaluateTransactionResponse ({ chain, validation?, simulation? })
 ```
 
 ### Backup and recovery

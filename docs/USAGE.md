@@ -280,17 +280,17 @@ wallet itself.
 
 ### Evaluating a transaction before signing
 
-Simulate and/or validate a transaction — balance changes and a risk score — before committing:
+Simulate and/or validate a transaction — risk classification and balance changes — before committing:
 
 ```ts
 const evaluation = await client.evaluateTransaction({
   query: { chainId: WalletChain.ETHEREUM_MAINNET },
   body: {
-    network: "ethereum",
-    transaction: { toAddress: "0xRecipient...", value: "10000000000000000" }, // wei
+    to: "0xRecipient...",
+    value: "0x2386f26fc10000", // wei, hex
     // operationType defaults to 'all' (validation + simulation)
   },
-}); // → { evaluation?, unsignedTx? }
+}); // → { chain, validation?, simulation? }
 ```
 
 **When:** before signing high-value or untrusted transactions, to surface unexpected balance
@@ -560,14 +560,24 @@ interface SendAssetsResponse {
   };
 }
 
-interface EvaluateTransactionBody {
-  network: string; // 'ethereum', 'solana', …
-  transaction: {
-    toAddress: string;
-    value: string;
-    data?: string;
-    token?: { address: string; decimals: number; symbol: string };
-  };
+// oneOf EVM or Solana, selected by `chainId`
+type EvaluateTransactionBody =
+  | EvaluateTransactionEvmBody
+  | EvaluateTransactionSolanaBody;
+
+interface EvaluateTransactionEvmBody {
+  to: string;
+  data?: string;
+  value?: string; // wei, hex
+  gas?: string;
+  gasPrice?: string;
+  maxFeePerGas?: string;
+  maxPriorityFeePerGas?: string;
+  operationType?: "validation" | "simulation" | "all"; // default 'all'
+}
+
+interface EvaluateTransactionSolanaBody {
+  transactions: string[]; // base58-encoded
   operationType?: "validation" | "simulation" | "all"; // default 'all'
 }
 
