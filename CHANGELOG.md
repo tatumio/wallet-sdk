@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.3.0...wallet-sdk-v0.3.1) (2026-06-24)
+
+
+### Bug Fixes
+
+* docs typos fix ([#12](https://github.com/tatumio/wallet-sdk/issues/12)) ([c8904a8](https://github.com/tatumio/wallet-sdk/commit/c8904a86ea7b351f95a022903d94a127f6e93f6a))
+
 ## [0.3.0](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.2.1...wallet-sdk-v0.3.0) (2026-06-24)
 
 
