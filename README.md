@@ -166,13 +166,7 @@ const recovered = await client.recoverWallet({
 ### RPC URL
 
 Enclave operations that touch a chain (`sign`, `sendAssets`) **require an explicit `rpcUrl`** in
-the body — the SDK no longer injects one. Pass any node:
-
-- **Your own node**, or any provider (Infura, Alchemy, self-hosted).
-- **A Tatum gateway** — `https://<network>.gateway.tatum.io` (the `<network>` slug is each chain's
-  `tatumNetwork`; see `WALLET_CHAINS`). For production, authenticate it with your key via the
-  `x-api-key` header — **never** put the key in the URL path (it leaks through logs/referrers).
-  The keyless anonymous gateway works but is rate-limited to a few requests/min — fine for dev only.
+the body
 
 Authentication note: custodian-scoped calls use your Tatum `x-api-key`. Client-scoped calls
 (`initClient`) use the client token and need **no** Tatum key.
@@ -184,12 +178,4 @@ npm install
 npm test
 npm run typecheck
 npm run build
-```
-
-## Publishing
-
-The package is configured for public npm publishing under the scoped package name:
-
-```sh
-npm publish --access public
 ```
