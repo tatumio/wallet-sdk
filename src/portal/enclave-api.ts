@@ -2,7 +2,6 @@ import { PORTAL_ENCLAVE_BASE_URL } from '../constants/index.js';
 import { buildRequestOptions } from '../operation.js';
 import { createPortalApiClient } from './transport.js';
 import type { Curve } from './types/index.js';
-import type { PortalTatumProvider } from '../tatum/provider.js';
 import type { RequestOptions, WalletsSDKConfig } from '../types.js';
 import type {
   BackupWalletBody,
@@ -31,32 +30,26 @@ export const enclaveOperations = {
 export type EnclaveOperation = keyof typeof enclaveOperations;
 
 /**
- * Enclave MPC layer (`mpc-client.portalhq.io/v1/...`). Operates on key shares;
- * auto-injects a Tatum-resolved `rpcUrl` (from the body's `chain`/`chainId`)
- * when one is not already present. Internal — exposed through {@link WalletsClient}.
+ * Enclave MPC layer (`/v1/...`). Operates on key shares;
+ * authenticates with the client's own token (Bearer) and never touches
+ * the Tatum API key. Chain operations (`sign`/`sendAssets`) require the caller
+ * to supply an `rpcUrl`. Internal — exposed through {@link WalletsClient}.
  */
 export class EnclaveApi {
   constructor(
     private readonly token: string,
-    private readonly provider: PortalTatumProvider,
     private readonly sdkConfig: WalletsSDKConfig
   ) {}
 
-  async request<TResponse = unknown>(operationName: EnclaveOperation, options: RequestOptions = {}): Promise<TResponse> {
+  request<TResponse = unknown>(operationName: EnclaveOperation, options: RequestOptions = {}): Promise<TResponse> {
     const operation = enclaveOperations[operationName];
     const client = createPortalApiClient(this.sdkConfig, this.token, PORTAL_ENCLAVE_BASE_URL);
-    const requestOptions = buildRequestOptions(operation.method, operation.path, {
-      ...options,
-      body: await this.withResolvedRpcUrl(options.body)
-    });
 
-    return client.request<TResponse>(requestOptions);
+    return client.request<TResponse>(buildRequestOptions(operation.method, operation.path, options));
   }
 
-  async generateWallet<TResponse = GenerateWalletResponse>(options?: PortalRequestOptions): Promise<TResponse> {
-    const result = await this.request<TResponse>('generateWallet', { ...options, body: {} });
-    await this.provider.trackWalletCreation(this.token);
-    return result;
+  generateWallet<TResponse = GenerateWalletResponse>(options?: PortalRequestOptions): Promise<TResponse> {
+    return this.request<TResponse>('generateWallet', { ...options, body: {} });
   }
 
   backupWallet<TResponse = BackupWalletResponse>(
@@ -71,47 +64,19 @@ export class EnclaveApi {
     return this.request<TResponse>('recoverWallet', options);
   }
 
-  async sign<TResponse = SignResponse>(options: PortalRequestOptions<SignBody>): Promise<TResponse> {
-    const result = await this.request<TResponse>('sign', options);
-    await this.provider.trackTransaction(this.token);
-    return result;
+  sign<TResponse = SignResponse>(options: PortalRequestOptions<SignBody>): Promise<TResponse> {
+    return this.request<TResponse>('sign', options);
   }
 
-  async rawSign<TResponse = RawSignResponse>(
+  rawSign<TResponse = RawSignResponse>(
     options: PortalRequestOptions<RawSignBody, { curve: Curve }>
   ): Promise<TResponse> {
-    const result = await this.request<TResponse>('rawSign', options);
-    await this.provider.trackTransaction(this.token);
-    return result;
+    return this.request<TResponse>('rawSign', options);
   }
 
-  async sendAssets<TResponse = SendAssetsResponse>(
+  sendAssets<TResponse = SendAssetsResponse>(
     options: PortalRequestOptions<SendAssetsBody>
   ): Promise<TResponse> {
-    const result = await this.request<TResponse>('sendAssets', options);
-    await this.provider.trackTransaction(this.token);
-    return result;
+    return this.request<TResponse>('sendAssets', options);
   }
-
-  private async withResolvedRpcUrl(body: unknown): Promise<unknown> {
-    if (!isRecord(body) || typeof body.rpcUrl === 'string') {
-      return body;
-    }
-
-    const chain =
-      typeof body.chain === 'string' ? body.chain : typeof body.chainId === 'string' ? body.chainId : undefined;
-
-    if (!chain) {
-      return body;
-    }
-
-    return {
-      ...body,
-      rpcUrl: await this.provider.getRpcUrl(chain)
-    };
-  }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

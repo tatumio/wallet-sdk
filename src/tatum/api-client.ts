@@ -5,7 +5,7 @@ import type { ApiRequestOptions, WalletsSDKConfig } from '../types.js';
 export class WalletsApiClient extends HttpClient {
   constructor(config: WalletsSDKConfig) {
     if (!config.apiKey) {
-      throw new Error('apiKey is required');
+      throw new Error('apiKey is required for custodian / sdk.api operations');
     }
 
     const apiKey = config.apiKey;

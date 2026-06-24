@@ -22,7 +22,7 @@ import type {
   UpdateGasSponsorshipBody
 } from './types/index.js';
 
-/** Custodian operations, proxied by Tatum under `/v4/wallets` (Tatum injects the Portal token). */
+/** Custodian operations, proxied by Tatum under `/v4/wallets` (Tatum injects the upstream token). */
 export const custodianOperations = {
   createClient: { method: 'POST', path: '/v4/wallets/clients' },
   listClients: { method: 'GET', path: '/v4/wallets/clients' },
@@ -121,7 +121,7 @@ export class CustodianApi {
 
   /**
    * Enable key eject for a client's wallet until `ejectableUntil`, allowing the
-   * client to later reconstruct its full private key off Portal.
+   * client to later reconstruct its full private key off-platform.
    */
   enableEject<TResponse = EnableEjectResponse>(
     options: PortalRequestOptions<EnableEjectBody, { clientId: string }>
@@ -131,7 +131,7 @@ export class CustodianApi {
 
   /**
    * Fetch a wallet's ejectable backup shares — the client's encrypted backup
-   * share (if stored with Portal) plus the custodian backup share.
+   * share (if stored server-side) plus the custodian backup share.
    */
   getEjectableBackupShares<TResponse = EjectableBackupShares>(
     options: PortalRequestOptions<never, { clientId: string; walletId: string }>

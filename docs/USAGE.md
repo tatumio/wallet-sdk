@@ -87,7 +87,7 @@ const client = wallets.initClient({ token: newClient.clientApiKey! });
 // 3. Generate an MPC wallet (one share per curve). Store these shares.
 const shares = await client.generateWallet();
 
-// 4. Send native ETH in one call.
+// 4. Send native ETH in one call. `rpcUrl` is required — see "RPC URL" below.
 const sent = await client.sendAssets({
   body: {
     share: shares.SECP256K1.share,
@@ -95,6 +95,7 @@ const sent = await client.sendAssets({
     to: "0xRecipient...",
     token: "NATIVE",
     amount: "0.01",
+    rpcUrl: "https://ethereum-mainnet.gateway.tatum.io/<your-key>",
   },
 });
 
@@ -109,16 +110,18 @@ console.log(sent.transactionHash);
 
 ```ts
 interface WalletsSDKConfig {
-  apiKey: string; // required — your Tatum API key
+  apiKey?: string; // required only for custodian / sdk.api operations
   baseUrl?: string; // default 'https://api.tatum.io'
   headers?: Record<string, string>; // extra headers on every request
   fetch?: typeof fetch; // custom fetch (tests, proxies, instrumentation)
 }
 ```
 
-Only `apiKey` is required. Custodian calls are authenticated with this key, and
-per-chain RPC URLs are resolved automatically from it — you never pass them
-yourself (see [Sending assets](#sending-assets) for RPC details).
+Everything is optional. `apiKey` (your Tatum `x-api-key`) is needed **only** for custodian
+operations and the raw `sdk.api` client — both throw if you call them without one. Client-scoped
+operations (`initClient`) authenticate with a client token and need no Tatum key, so the SDK
+runs safely client-side. Enclave chain operations take an explicit `rpcUrl`
+(see [Sending assets](#sending-assets) for RPC details).
 
 ---
 
@@ -233,21 +236,20 @@ const sent = await client.sendAssets({
     to: "0xRecipient...",
     token: "NATIVE", // or a contract/mint address, e.g. a USDC address
     amount: "0.01",
+    rpcUrl: "https://my-own-node.example/rpc",
   },
 });
 // sent.transactionHash, sent.metadata.{amount,rawAmount,tokenAddress,tokenDecimals}
 ```
 
-**RPC URL injection.** Enclave operations (`sendAssets`, `sign`) need a chain RPC URL. The SDK
-resolves a Tatum gateway URL automatically — `https://<network>.gateway.tatum.io/<your-api-key>`,
-where `<network>` is the chain's `tatumNetwork`. Pass an explicit `rpcUrl` in the body only
-to override it (e.g. your own node):
+**RPC URL (required).** Enclave operations that touch a chain (`sendAssets`, `sign`) require an
+explicit `rpcUrl` in the body — the SDK does not inject one. Use any node:
 
-```ts
-await client.sendAssets({
-  body: { /* … */ rpcUrl: "https://my-own-node.example/rpc" },
-});
-```
+- **Your own node** or any provider (Infura, Alchemy, self-hosted).
+- **A Tatum gateway** — `https://<network>.gateway.tatum.io`, where `<network>` is the chain's
+  `tatumNetwork` (see `WALLET_CHAINS`). For production, pass your key via the `x-api-key` **header**,
+  not in the URL path (a key in the path leaks through logs and referrer headers). The keyless
+  anonymous gateway responds but is rate-limited to a few requests per minute — dev/testing only.
 
 ### Signing
 
@@ -261,6 +263,7 @@ const signed = await client.sign({
     params: ["0x48656c6c6f"], // method-dependent
     chainId: WalletChain.ETHEREUM_MAINNET,
     to: "0xRecipient...",
+    rpcUrl: "https://my-own-node.example/rpc", // required
   },
 }); // → { data }
 ```
@@ -410,7 +413,7 @@ const health = await wallets.api.request<{ ok: boolean }>({
 // Raw client REST operation by name.
 await client.request("getClientDetails");
 
-// Raw enclave (MPC) operation by name — rpcUrl auto-injected from body chain/chainId.
+// Raw enclave (MPC) operation by name. Chain ops (sign/sendAssets) need rpcUrl in the body.
 await client.enclaveRequest("generateWallet");
 ```
 
@@ -428,9 +431,9 @@ applicable to an operation are typed away (e.g. a method with no body forbids `b
 
 | Member       | Signature                               | Returns         | When                         |
 | ------------ | --------------------------------------- | --------------- | ---------------------------- |
-| `api`        | `WalletsApiClient`                      | —               | Raw Tatum HTTP escape hatch. |
-| `custodian`  | `CustodianApi`                          | —               | Custodian-scoped operations. |
-| `initClient` | `initClient(config: { token: string })` | `WalletsClient` | Act as one client.           |
+| `api`        | `WalletsApiClient`                      | —               | Raw Tatum HTTP escape hatch (requires `apiKey`). |
+| `custodian`  | `CustodianApi`                          | —               | Custodian-scoped operations (requires `apiKey`). |
+| `initClient` | `initClient(config: { token: string })` | `WalletsClient` | Act as one client (no `apiKey`).           |
 
 ### Custodian — `sdk.custodian`
 
@@ -473,7 +476,7 @@ applicable to an operation are typed away (e.g. a method with no body forbids `b
 | `sign`           | body `SignBody`                      | `SignResponse`                           | Sign (and submit) via an RPC method.  |
 | `rawSign`        | path `{ curve }`, body `RawSignBody` | `RawSignResponse`                        | Raw-sign a hex digest.                |
 | `sendAssets`     | body `SendAssetsBody`                | `SendAssetsResponse`                     | Build + sign + broadcast a transfer.  |
-| `enclaveRequest` | `(operationName, options?)`          | `unknown`                                | Enclave escape hatch (auto `rpcUrl`). |
+| `enclaveRequest` | `(operationName, options?)`          | `unknown`                                | Enclave escape hatch.                 |
 
 ### Tatum HTTP client — `sdk.api`
 
@@ -494,7 +497,7 @@ applicable to an operation are typed away (e.g. a method with no body forbids `b
 
 ```ts
 interface WalletsSDKConfig {
-  apiKey: string;
+  apiKey?: string; // required only for custodian / sdk.api operations
   baseUrl?: string;
   headers?: Record<string, string>;
   fetch?: typeof fetch;
@@ -529,7 +532,7 @@ interface SignBody {
   share: string;
   chainId: WalletChain;
   to: string;
-  rpcUrl?: string; // auto-injected when omitted
+  rpcUrl: string; // required — node provider RPC URL
   metadataStr?: string;
   sponsorGas?: boolean; // default true
   presignature?: string; // mutually exclusive with presignatureId
@@ -542,7 +545,7 @@ interface SendAssetsBody {
   to: string;
   token: string; // contract/mint address or 'NATIVE'
   amount: string;
-  rpcUrl?: string; // auto-injected when omitted
+  rpcUrl: string; // required — node provider RPC URL
   nonce?: string;
   metadataStr?: string;
   sponsorGas?: boolean; // default true
@@ -619,6 +622,7 @@ try {
   });
 } catch (err) {
   if (err instanceof WalletsApiError) {
+    console.error(err.message); // includes the upstream detail (see below)
     console.error(err.status, err.statusText, err.body);
     // err.headers is the response Headers
   }
@@ -631,6 +635,22 @@ try {
 | `statusText` | `string \| undefined`  | HTTP status text.                           |
 | `body`       | `unknown`              | Parsed response body (JSON when available). |
 | `headers`    | `Headers \| undefined` | Response headers.                           |
+
+**Message folding.** `err.message` is `"<label> request failed with status <n>"` with the
+upstream error detail appended when present (e.g. `…status 422: Failed to send transaction: nonce
+too low`). The error envelope is not uniform across layers, so the detail is read from whichever
+field carries it:
+
+```ts
+type PortalErrorBody =
+  | { id: string; message?: string } // enclave MPC (id is a code, e.g. 'RPC_OP_FAILED')
+  | { error: string } // client / custodian REST
+  | { requestError?: { message?: string } } // simulate-transaction
+  | string; // plain text (e.g. enclave 401)
+```
+
+`err.body` stays `unknown` (runtime bodies may not match any shape) — narrow it with
+`PortalErrorBody`, or call the exported `extractErrorDetail(body)` to pull the message yourself.
 
 ---
 

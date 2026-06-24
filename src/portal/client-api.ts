@@ -37,8 +37,8 @@ export const clientOperations = {
 export type ClientOperation = keyof typeof clientOperations;
 
 /**
- * Client-scoped Portal REST layer (`/clients/me/...`). Authenticates with the
- * client's own Portal API key / Client Session Token. Internal — exposed to
+ * Client-scoped REST layer (`/clients/me/...`). Authenticates with the
+ * client's own API key / Client Session Token. Internal — exposed to
  * consumers through {@link WalletsClient}.
  */
 export class ClientApi {

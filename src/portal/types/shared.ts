@@ -1,7 +1,7 @@
 import type { RequestOptions } from '../../types.js';
 
 /**
- * Per-operation options for typed Portal methods. Narrows the shared
+ * Per-operation options for typed API methods. Narrows the shared
  * RequestOptions: when a type param is `never` the field is forbidden, otherwise
  * required (Query defaults to forbidden). `headers` and `signal` stay available.
  */

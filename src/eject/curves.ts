@@ -71,8 +71,8 @@ export function toPaddedHexBE(value: bigint): string {
 
 /**
  * Reverse the minimal big-endian bytes of `value` into a 32-byte buffer,
- * right-aligned (zero-padded at the front). This matches @portal-hq/eject-js's
- * ed25519 output exactly — including its treatment of scalars with leading
+ * right-aligned (zero-padded at the front). This matches the reference eject-js
+ * implementation's ed25519 output exactly — including its treatment of scalars with leading
  * zero bytes — so reconstructed keys are byte-identical to the reference.
  * Note: this is NOT a plain left-aligned little-endian encoding.
  */

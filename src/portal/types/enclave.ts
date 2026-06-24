@@ -1,7 +1,7 @@
-import type { WalletChain } from '../../chains.js';
-import type { CurveShares } from './shared.js';
+import type { WalletChain } from "../../chains.js";
+import type { CurveShares } from "./shared.js";
 
-// ── enclave (mpc-client.portalhq.io) ────────────────────────────────
+// ── enclave (MPC API) ───────────────────────────────────────────────
 export type GenerateWalletResponse = CurveShares;
 
 export interface BackupWalletBody {
@@ -22,7 +22,7 @@ export interface SignBody {
   share: string;
   chainId: WalletChain;
   to: string;
-  rpcUrl?: string; // SDK injects Tatum RPC when omitted
+  rpcUrl: string; // node provider RPC URL
   metadataStr?: string;
   sponsorGas?: boolean; // default true
   presignature?: string; // mutually exclusive with presignatureId
@@ -52,7 +52,7 @@ export interface SendAssetsBody {
   to: string;
   token: string; // contract/mint address or 'NATIVE' / 'USDC' / ...
   amount: string;
-  rpcUrl?: string; // SDK injects Tatum RPC when omitted
+  rpcUrl: string; // node provider RPC URL
   nonce?: string;
   metadataStr?: string;
   sponsorGas?: boolean; // default true

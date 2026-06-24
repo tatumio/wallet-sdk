@@ -66,10 +66,10 @@ describe('Portal-backed Tatum Wallets SDK', () => {
     expect((calls[0]?.init?.headers as Record<string, string>)?.authorization).toBeUndefined();
   });
 
-  it('injects a Tatum-resolved RPC URL for client sendAssets when omitted', async () => {
+  it('sends the caller-provided rpcUrl on sendAssets without injecting one', async () => {
     const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    // No apiKey: client-side enclave calls must work with only a client token.
     const sdk = new TatumWalletsSdk({
-      apiKey: 'tatum-api-key',
       fetch: async (input, init) => {
         calls.push({ input, init });
         return jsonResponse({ transactionHash: '0xhash' });
@@ -84,11 +84,15 @@ describe('Portal-backed Tatum Wallets SDK', () => {
         chain: WalletChain.ETHEREUM_MAINNET,
         to: '0xabc',
         token: 'NATIVE',
-        amount: '0.01'
+        amount: '0.01',
+        rpcUrl: 'https://my-own-node.example/rpc'
       }
     });
 
+    // Only the enclave call fires — no Tatum RPC resolution, no usage metering.
+    expect(calls).toHaveLength(1);
     expect(String(calls[0]?.input)).toBe('https://mpc-client.portalhq.io/v1/assets/send');
+    expect(calls[0]?.init?.headers).toMatchObject({ authorization: 'Bearer portal-client-token' });
     expect(calls[0]?.init?.body).toBe(
       JSON.stringify({
         share: 'share',
@@ -96,21 +100,9 @@ describe('Portal-backed Tatum Wallets SDK', () => {
         to: '0xabc',
         token: 'NATIVE',
         amount: '0.01',
-        rpcUrl: 'https://ethereum-mainnet.gateway.tatum.io/tatum-api-key'
+        rpcUrl: 'https://my-own-node.example/rpc'
       })
     );
-  });
-
-  it('throws when resolving an RPC URL for an unsupported chain', async () => {
-    const sdk = new TatumWalletsSdk({ apiKey: 'tatum-api-key', fetch: async () => jsonResponse({}) });
-    const client = sdk.initClient({ token: 'portal-client-token' });
-
-    // Escape hatch with an unmapped chain — no gateway slug exists for it.
-    await expect(
-      client.enclaveRequest('sendAssets', {
-        body: { share: 's', chain: 'eip155:999999', to: '0xabc', token: 'NATIVE', amount: '0.01' }
-      })
-    ).rejects.toThrow('No Tatum RPC gateway configured for chain "eip155:999999"');
   });
 
   it('creates and lists Portal clients through the Tatum-backed custodian', async () => {
@@ -191,17 +183,13 @@ describe('Portal-backed Tatum Wallets SDK', () => {
 
     expect(String(calls[0]?.input)).toBe('https://mpc-client.portalhq.io/v1/generate');
     expect(calls[0]?.init).toMatchObject({ method: 'POST', body: JSON.stringify({}) });
-    // generateWallet meters wallet-creation usage against Tatum before returning.
-    expect(String(calls[1]?.input)).toBe('https://api.tatum.io/v4/wallets/usage/wallet');
-    expect(calls[1]?.init?.headers).toMatchObject({
-      'x-api-key': 'tatum-api-key',
-      authorization: 'Bearer portal-client-token'
-    });
-    expect(String(calls[2]?.input)).toBe('https://mpc-client.portalhq.io/v1/backup');
-    expect(calls[2]?.init).toMatchObject({
+    expect(String(calls[1]?.input)).toBe('https://mpc-client.portalhq.io/v1/backup');
+    expect(calls[1]?.init).toMatchObject({
       method: 'POST',
       body: JSON.stringify({ generateResponse: '{"ok":true}' })
     });
+    // No usage metering: only the two enclave calls fire.
+    expect(calls).toHaveLength(2);
   });
 
   it('supports custodian transaction and ejection operations', async () => {
@@ -425,7 +413,8 @@ describe('Portal-backed Tatum Wallets SDK', () => {
         method: 'eth_sendTransaction',
         params: { to: '0xabc', value: '0x01' },
         chainId: WalletChain.ETHEREUM_MAINNET,
-        to: '0xabc'
+        to: '0xabc',
+        rpcUrl: 'https://caller.rpc'
       },
       headers: { 'Idempotency-Key': 'idem-1' }
     });
@@ -451,18 +440,12 @@ describe('Portal-backed Tatum Wallets SDK', () => {
         params: { to: '0xabc', value: '0x01' },
         chainId: 'eip155:1',
         to: '0xabc',
-        rpcUrl: 'https://ethereum-mainnet.gateway.tatum.io/tatum-api-key'
+        rpcUrl: 'https://caller.rpc'
       })
     );
-    // sign meters transaction usage against Tatum before sendAssets runs.
-    expect(String(calls[2]?.input)).toBe('https://api.tatum.io/v4/wallets/usage/transaction');
-    expect(calls[2]?.init?.headers).toMatchObject({
-      'x-api-key': 'tatum-api-key',
-      authorization: 'Bearer portal-client-token'
-    });
-    expect(String(calls[3]?.input)).toBe('https://mpc-client.portalhq.io/v1/assets/send');
-    expect(calls[3]?.init?.headers).toMatchObject({ 'idempotency-key': 'idem-2' });
-    expect(calls[3]?.init?.body).toBe(
+    expect(String(calls[2]?.input)).toBe('https://mpc-client.portalhq.io/v1/assets/send');
+    expect(calls[2]?.init?.headers).toMatchObject({ 'idempotency-key': 'idem-2' });
+    expect(calls[2]?.init?.body).toBe(
       JSON.stringify({
         share: 'share',
         chain: 'eip155:1',
@@ -472,33 +455,8 @@ describe('Portal-backed Tatum Wallets SDK', () => {
         rpcUrl: 'https://caller.rpc'
       })
     );
-    // sendAssets meters transaction usage too.
-    expect(String(calls[4]?.input)).toBe('https://api.tatum.io/v4/wallets/usage/transaction');
-  });
-
-  it('does not let a usage-metering failure break the signing operation', async () => {
-    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
-    const sdk = new TatumWalletsSdk({
-      apiKey: 'tatum-api-key',
-      fetch: async (input, init) => {
-        calls.push({ input, init });
-        // Fail only the usage-metering call; the enclave sign must still succeed.
-        if (String(input).includes('/v4/wallets/usage/')) {
-          return jsonResponse({ message: 'metering down' }, { status: 500 });
-        }
-        return jsonResponse({ data: '0xsig' });
-      }
-    });
-    const client = sdk.initClient({ token: 'portal-client-token' });
-
-    const result = await client.rawSign({
-      path: { curve: 'SECP256K1' },
-      body: { params: '7369676e2074686973', share: 'share' }
-    });
-
-    expect(result).toEqual({ data: '0xsig' });
-    expect(String(calls[0]?.input)).toBe('https://mpc-client.portalhq.io/v1/raw/sign/SECP256K1');
-    expect(String(calls[1]?.input)).toBe('https://api.tatum.io/v4/wallets/usage/transaction');
+    // No usage metering: recover + sign + sendAssets only.
+    expect(calls).toHaveLength(3);
   });
 });
 
@@ -558,12 +516,26 @@ describe('WalletsClient enclave types', () => {
     expectTypeOf(client.sign).parameter(0).toMatchTypeOf<{ body: { method: string } }>();
     expectTypeOf(
       client.sendAssets({
-        body: { share: 's', chain: WalletChain.ETHEREUM_MAINNET, to: '0x', token: 'NATIVE', amount: '0.1' }
+        body: {
+          share: 's',
+          chain: WalletChain.ETHEREUM_MAINNET,
+          to: '0x',
+          token: 'NATIVE',
+          amount: '0.1',
+          rpcUrl: 'https://node.example/rpc'
+        }
       })
     ).resolves.toEqualTypeOf<SendAssetsResponse>();
     expectTypeOf(
       client.sign({
-        body: { method: 'personal_sign', params: [], share: 's', chainId: WalletChain.ETHEREUM_MAINNET, to: '0x' }
+        body: {
+          method: 'personal_sign',
+          params: [],
+          share: 's',
+          chainId: WalletChain.ETHEREUM_MAINNET,
+          to: '0x',
+          rpcUrl: 'https://node.example/rpc'
+        }
       })
     ).resolves.toEqualTypeOf<SignResponse>();
   });

@@ -1,7 +1,7 @@
 import type { WalletChain } from '../../chains.js';
 import type { ClientDetails } from './shared.js';
 
-// ── custodian (api.portalhq.io/api/v3, /custodians/me/...) ───────────
+// ── custodian (/custodians/me/...) ──────────────────────────────────
 export interface CreateClientBody {
   isAccountAbstracted?: boolean;
 }

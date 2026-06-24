@@ -4,14 +4,14 @@ import type { ApiRequestOptions, QueryValue } from './types.js';
 /**
  * Mutates the outgoing header map to add an authentication header. Each API
  * surface supplies its own strategy (e.g. `x-api-key` for Tatum, bearer token
- * for Portal) so the transport stays auth-agnostic.
+ * for the MPC API) so the transport stays auth-agnostic.
  */
 export type ApplyAuthHeaders = (headers: Record<string, string>) => void;
 
 export interface HttpClientConfig {
   baseUrl: string;
   applyAuth: ApplyAuthHeaders;
-  /** Prefix for thrown error messages, e.g. `'Wallets API'` or `'Portal API'`. */
+  /** Prefix for thrown error messages, e.g. `'Wallets API'` or `'MPC API'`. */
   errorLabel: string;
   headers?: Record<string, string> | undefined;
   fetch?: typeof fetch | undefined;
