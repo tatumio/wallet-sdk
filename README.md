@@ -13,13 +13,21 @@ npm install @tatumio/wallet-sdk
 ```ts
 import { TatumWalletsSdk } from "@tatumio/wallet-sdk";
 
+// Backend: pass your Tatum API key to use custodian operations.
 const wallets = new TatumWalletsSdk({
   apiKey: process.env.TATUM_API_KEY!,
   baseUrl: "https://api.tatum.io",
 });
+
+// Client-side (browser/mobile): no apiKey — authenticate with a client token only.
+const clientSide = new TatumWalletsSdk();
+const client = clientSide.initClient({ token: clientSessionToken });
 ```
 
-For lower-level or not-yet-modeled Tatum calls, use `wallets.api.request(...)` directly.
+The `apiKey` is **required only for custodian / `sdk.api` operations** (backend). Client-scoped
+operations (`initClient`) authenticate with a client token and need no Tatum key, so the
+SDK is safe to run client-side. For lower-level or not-yet-modeled Tatum calls, use
+`wallets.api.request(...)` directly.
 
 See [docs/USAGE.md](docs/USAGE.md) for the full guide and complete API reference.
 
@@ -67,6 +75,7 @@ await client.sendAssets({
     to: "0x...",
     token: "NATIVE",
     amount: "0.01",
+    rpcUrl: "https://ethereum-mainnet.gateway.tatum.io/<your-key>", // required — see RPC URL below
   },
 });
 ```
@@ -85,6 +94,7 @@ const signed = await client.sign({
     params: ["0x48656c6c6f"],
     chainId: WalletChain.ETHEREUM_MAINNET,
     to: "0x...",
+    rpcUrl: "https://ethereum-mainnet.gateway.tatum.io/<your-key>", // required
   },
 });
 
@@ -153,7 +163,19 @@ const recovered = await client.recoverWallet({
 }); // typed as RecoverWalletResponse
 ```
 
-Custodian-scoped calls are authenticated with your Tatum `x-api-key` — that single key is all you ever pass. Enclave operations that need an RPC URL get one automatically — the SDK builds `https://<network>.gateway.tatum.io/<your-api-key>` from the chain's `tatumNetwork` (see `WALLET_CHAINS`) — unless you pass an explicit `rpcUrl` in the body.
+### RPC URL
+
+Enclave operations that touch a chain (`sign`, `sendAssets`) **require an explicit `rpcUrl`** in
+the body — the SDK no longer injects one. Pass any node:
+
+- **Your own node**, or any provider (Infura, Alchemy, self-hosted).
+- **A Tatum gateway** — `https://<network>.gateway.tatum.io` (the `<network>` slug is each chain's
+  `tatumNetwork`; see `WALLET_CHAINS`). For production, authenticate it with your key via the
+  `x-api-key` header — **never** put the key in the URL path (it leaks through logs/referrers).
+  The keyless anonymous gateway works but is rate-limited to a few requests/min — fine for dev only.
+
+Authentication note: custodian-scoped calls use your Tatum `x-api-key`. Client-scoped calls
+(`initClient`) use the client token and need **no** Tatum key.
 
 ## Development
 

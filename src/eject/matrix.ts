@@ -1,6 +1,6 @@
 import { mod, modInverse } from './curves.js';
 
-/** Dense matrix over the integers mod `fieldOrder`. Ported from @portal-hq/eject-js. */
+/** Dense matrix over the integers mod `fieldOrder`. Ported from the reference eject-js implementation. */
 export class Matrix {
   readonly fieldOrder: bigint;
   data: bigint[][];

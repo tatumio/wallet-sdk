@@ -1,5 +1,6 @@
 export { WALLET_CHAINS, WalletChain, getWalletChainConfig } from './chains.js';
-export { WalletsApiError } from './errors.js';
+export { WalletsApiError, extractErrorDetail } from './errors.js';
+export type { PortalErrorBody } from './errors.js';
 export { CustodianApi, custodianOperations } from './portal/custodian.js';
 export { clientOperations } from './portal/client-api.js';
 export { enclaveOperations } from './portal/enclave-api.js';

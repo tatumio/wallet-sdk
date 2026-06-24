@@ -4,7 +4,7 @@ Guidance for AI coding agents working in this repository.
 
 ## Overview
 
-TypeScript ESM SDK for **Tatum MPC wallets** — create wallets, sign and send transactions, back up and recover keys, and manage end-user clients from a backend with a single Tatum API key. The SDK class and single entry point is `TatumWalletsSdk` (`src/sdk.ts`); the public export surface is `src/index.ts`. Consumer documentation lives in `README.md` and `docs/USAGE.md`.
+TypeScript ESM SDK for **Tatum MPC wallets** — create wallets, sign and send transactions, back up and recover keys, and manage end-user clients. Two scopes: **custodian/`api`** (backend-only — require a Tatum `apiKey` and throw without one) and **`initClient`** (client-side — authenticates with a client token, needs no `apiKey`, safe in a browser). `apiKey` is therefore **optional** on `WalletsSDKConfig`. Chain enclave operations (`sign`/`sendAssets`) require the caller to pass an explicit `rpcUrl` (the SDK injects nothing). The SDK class and single entry point is `TatumWalletsSdk` (`src/sdk.ts`); the public export surface is `src/index.ts`. Consumer documentation lives in `README.md` and `docs/USAGE.md`.
 
 ## Commands
 

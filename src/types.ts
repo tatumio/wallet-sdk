@@ -8,7 +8,8 @@ export type QueryParams = Record<string, QueryValue | readonly QueryValue[]>;
 
 export interface WalletsSDKConfig {
   baseUrl?: string;
-  apiKey: string;
+  /** Tatum API key (`x-api-key`). Required only for custodian / `sdk.api` operations. */
+  apiKey?: string;
   headers?: Record<string, string>;
   fetch?: typeof fetch;
 }

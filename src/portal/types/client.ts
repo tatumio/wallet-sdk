@@ -64,7 +64,7 @@ export interface EvaluateTransactionResponse {
   simulation?: EvaluateTransactionSimulation;
 }
 
-// ── client-scoped share-pair + eject (api.portalhq.io/api/v3, /clients/me/...) ──
+// ── client-scoped share-pair + eject (/clients/me/...) ──
 export interface UpdateSigningSharePairsBody {
   signingSharePairIds: string[];
   status: 'STORED_CLIENT';
@@ -76,8 +76,8 @@ export interface UpdateBackupSharePairsBody {
 
 /**
  * Body for storing a single client-encrypted backup share against its pair.
- * Sent once per curve (SECP256K1, ED25519) as part of the Portal-Managed
- * backup flow. Endpoint returns 204 No Content.
+ * Sent once per curve (SECP256K1, ED25519) as part of the managed-backup
+ * flow. Endpoint returns 204 No Content.
  */
 export interface StoreBackupShareBody {
   /** Ciphertext produced by encrypting the curve's backup share. */

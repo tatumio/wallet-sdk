@@ -6,7 +6,6 @@ import type { ClientOperation } from './client-api.js';
 import type { EnclaveOperation } from './enclave-api.js';
 import type { Curve } from './types/index.js';
 import type { WalletChain } from '../chains.js';
-import type { PortalTatumProvider } from '../tatum/provider.js';
 import type { RequestOptions, WalletsSDKConfig } from '../types.js';
 import type {
   BackupShareCipherTextResponse,
@@ -42,10 +41,10 @@ export interface InitClientConfig {
 export type WalletsClientRequestOptions = RequestOptions;
 
 /**
- * Client-scoped Portal operations for a single Portal client.
+ * Client-scoped operations for a single client.
  *
  * Obtain via {@link TatumWalletsSdk.initClient}. Calls authenticate with the
- * client's Portal API key / Client Session Token. It is a thin facade over two
+ * client's API key / Client Session Token. It is a thin facade over two
  * internal layers — the client REST API ({@link ClientApi}, `/clients/me/...`)
  * and the Enclave MPC API ({@link EnclaveApi}, wallet generation/signing/sending/
  * backup/recovery, which operate on key shares).
@@ -54,13 +53,13 @@ export class WalletsClient {
   private readonly clientApi: ClientApi;
   private readonly enclaveApi: EnclaveApi;
 
-  constructor(clientConfig: InitClientConfig, provider: PortalTatumProvider, sdkConfig: WalletsSDKConfig) {
+  constructor(clientConfig: InitClientConfig, sdkConfig: WalletsSDKConfig) {
     if (!clientConfig.token) {
       throw new Error('Client token is required');
     }
 
     this.clientApi = new ClientApi(clientConfig.token, sdkConfig);
-    this.enclaveApi = new EnclaveApi(clientConfig.token, provider, sdkConfig);
+    this.enclaveApi = new EnclaveApi(clientConfig.token, sdkConfig);
   }
 
   /**
@@ -75,9 +74,9 @@ export class WalletsClient {
   }
 
   /**
-   * Escape hatch: dispatch any Enclave MPC operation by name. Auto-injects a
-   * Tatum-resolved `rpcUrl` (from the body's `chain`/`chainId`) when one is
-   * not already present. Prefer the typed enclave methods below.
+   * Escape hatch: dispatch any Enclave MPC operation by name. Chain operations
+   * (`sign`/`sendAssets`) require an `rpcUrl` in the body. Prefer the typed
+   * enclave methods below.
    */
   enclaveRequest<TResponse = unknown>(
     operationName: EnclaveOperation,
@@ -119,7 +118,7 @@ export class WalletsClient {
 
   /**
    * Mark backup share pairs stored — the final step of a backup, after
-   * {@link storeEncryptedBackupShare} (Portal-Managed) or storing on your own backend.
+   * {@link storeEncryptedBackupShare} (managed backup) or storing on your own backend.
    */
   updateBackupSharePairs<TResponse = void>(
     options: PortalRequestOptions<UpdateBackupSharePairsBody>
@@ -128,7 +127,7 @@ export class WalletsClient {
   }
 
   /**
-   * Store a client-encrypted backup share against its pair (Portal-Managed
+   * Store a client-encrypted backup share against its pair (managed
    * backups). Call once per curve with that curve's ciphertext, then mark the
    * pairs stored via {@link updateBackupSharePairs}.
    */
@@ -217,7 +216,7 @@ export class WalletsClient {
 
   /**
    * Build, sign, and broadcast an asset transfer in one call (Enclave API).
-   * A Tatum-resolved `rpcUrl` is injected from `chain` when omitted.
+   * Requires an `rpcUrl` in the body (your own node or a Tatum gateway URL).
    */
   sendAssets<TResponse = SendAssetsResponse>(
     options: PortalRequestOptions<SendAssetsBody>

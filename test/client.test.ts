@@ -4,7 +4,8 @@ import {
   TatumWalletsSdk,
   WalletsApiClient,
   WalletsApiError,
-  WalletsClient
+  WalletsClient,
+  extractErrorDetail
 } from '../src/index.js';
 
 const jsonResponse = (body: unknown, init?: ResponseInit) =>
@@ -97,14 +98,15 @@ describe('WalletsApiClient', () => {
 });
 
 describe('TatumWalletsSdk', () => {
-  it('requires an API key', () => {
-    expect(() =>
-      new TatumWalletsSdk({
-        apiKey: '',
-        baseUrl: 'https://api.example.test',
-        fetch: async () => jsonResponse({ ok: true })
-      })
-    ).toThrow('apiKey is required');
+  it('constructs without an API key but requires one for custodian / api operations', () => {
+    const sdk = new TatumWalletsSdk({ fetch: async () => jsonResponse({ ok: true }) });
+
+    // Client-side operations need only a client token — no Tatum apiKey.
+    expect(sdk.initClient({ token: 'portal-client-token' })).toBeInstanceOf(WalletsClient);
+
+    // Custodian / raw api are backend-only and throw without an apiKey.
+    expect(() => sdk.custodian).toThrow('apiKey is required');
+    expect(() => sdk.api).toThrow('apiKey is required');
   });
 
   it('exposes a generic API wrapper, custodian API, and client initializer', async () => {
@@ -128,5 +130,67 @@ describe('TatumWalletsSdk', () => {
 
     expect(error).toBeInstanceOf(Error);
     expect(error).toBeInstanceOf(WalletsApiError);
+  });
+
+  it('folds the upstream error detail into the message across layers', () => {
+    // Enclave MPC: { id, message }
+    expect(
+      new WalletsApiError('MPC API request failed with status 422', {
+        status: 422,
+        body: { id: 'RPC_OP_FAILED', message: 'Failed to send transaction: nonce too low' }
+      }).message
+    ).toBe('MPC API request failed with status 422: Failed to send transaction: nonce too low');
+
+    // Enclave MPC with a code but no message: falls back to the id.
+    expect(
+      new WalletsApiError('MPC API request failed with status 400', {
+        status: 400,
+        body: { id: 'BAD_REQUEST' }
+      }).message
+    ).toBe('MPC API request failed with status 400: BAD_REQUEST');
+
+    // Client / custodian REST: { error }
+    expect(
+      new WalletsApiError('Wallets API request failed with status 404', {
+        status: 404,
+        body: { error: 'Client not found' }
+      }).message
+    ).toBe('Wallets API request failed with status 404: Client not found');
+
+    // simulate-transaction: { requestError: { message } }
+    expect(
+      new WalletsApiError('Wallets API request failed with status 400', {
+        status: 400,
+        body: { requestError: { message: 'insufficient funds' } }
+      }).message
+    ).toBe('Wallets API request failed with status 400: insufficient funds');
+
+    // Plain-text body (e.g. enclave 401).
+    expect(
+      new WalletsApiError('MPC API request failed with status 401', {
+        status: 401,
+        body: 'Incorrect API key format'
+      }).message
+    ).toBe('MPC API request failed with status 401: Incorrect API key format');
+
+    // No usable detail: message is left untouched, body still accessible.
+    const bare = new WalletsApiError('Wallets API request failed with status 500', {
+      status: 500,
+      body: undefined
+    });
+    expect(bare.message).toBe('Wallets API request failed with status 500');
+    expect(bare.body).toBeUndefined();
+  });
+
+  it('extractErrorDetail reads each layer envelope and ignores empties', () => {
+    expect(extractErrorDetail({ id: 'X', message: 'boom' })).toBe('boom');
+    expect(extractErrorDetail({ id: 'DKG_FAILED' })).toBe('DKG_FAILED');
+    expect(extractErrorDetail({ error: 'nope' })).toBe('nope');
+    expect(extractErrorDetail({ requestError: { message: 'bad' } })).toBe('bad');
+    expect(extractErrorDetail('  text  ')).toBe('text');
+    expect(extractErrorDetail('')).toBeUndefined();
+    expect(extractErrorDetail({})).toBeUndefined();
+    expect(extractErrorDetail(null)).toBeUndefined();
+    expect(extractErrorDetail(undefined)).toBeUndefined();
   });
 });

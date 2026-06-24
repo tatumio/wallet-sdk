@@ -28,9 +28,13 @@ export interface WalletChainConfig {
   chainId: WalletChain;
   /** Signing curve this chain uses — picks which `shares[curve]` to pass to sign/sendAssets. */
   curve: Curve;
-  /** Whether an explicit `rpcUrl` is required for enclave operations on this chain. */
+  /**
+   * Whether the API hard-requires an explicit `rpcUrl` server-side (no managed
+   * default node). Informational: the SDK always expects callers to pass
+   * `rpcUrl` on `sign`/`sendAssets` regardless.
+   */
   requiresRpcUrl: boolean;
-  /** Tatum RPC gateway network slug (`<slug>.gateway.tatum.io`). */
+  /** Tatum network slug — used for Tatum custodian proxy paths and `<slug>.gateway.tatum.io` RPC URLs. */
   tatumNetwork: string;
 }
 
