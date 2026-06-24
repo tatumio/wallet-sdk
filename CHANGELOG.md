@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.2.1...wallet-sdk-v0.3.0) (2026-06-24)
+
+
+### Features
+
+* separate client and custodian auth; require explicit rpcUrl; error message union ([#9](https://github.com/tatumio/wallet-sdk/issues/9)) ([ed56e3f](https://github.com/tatumio/wallet-sdk/commit/ed56e3f2d93220ac0b3f06f5a086a7379dad5271))
+
 ## [0.2.1](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.2.0...wallet-sdk-v0.2.1) (2026-06-22)
 
 
