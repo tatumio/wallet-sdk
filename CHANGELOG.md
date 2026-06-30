@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.3.1...wallet-sdk-v0.4.0) (2026-06-30)
+
+
+### Features
+
+* add bsc chain ([#14](https://github.com/tatumio/wallet-sdk/issues/14)) ([a8c6928](https://github.com/tatumio/wallet-sdk/commit/a8c69284bfa44f722154fb6dd1f5ae68d562fa2c))
+
 ## [0.3.1](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.3.0...wallet-sdk-v0.3.1) (2026-06-24)
 
 
