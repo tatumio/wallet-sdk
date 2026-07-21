@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.4.0...wallet-sdk-v0.5.0) (2026-07-21)
+
+
+### Features
+
+* add solana-devnet ([#16](https://github.com/tatumio/wallet-sdk/issues/16)) ([501d431](https://github.com/tatumio/wallet-sdk/commit/501d431f71f15bc5bc53e5013a29eda0662d04d4))
+
 ## [0.4.0](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.3.1...wallet-sdk-v0.4.0) (2026-06-30)
 
 
