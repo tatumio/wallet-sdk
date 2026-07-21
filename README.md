@@ -80,7 +80,7 @@ await client.sendAssets({
 });
 ```
 
-Chain fields (`chain` / `chainId` on sign, sendAssets, evaluate, and the `{chain}` path on build-transaction) take the `WalletChain` enum rather than raw strings. Each value is the chain's CAIP-2 id, and `WALLET_CHAINS[chain]` / `getWalletChainConfig(chain)` expose its `curve` and `requiresRpcUrl`. Primary chains: Monad, Ethereum, Solana, Stellar, Tron, Bitcoin, Arbitrum, Avalanche, Base, Optimism, Polygon, Celo (all `_MAINNET`), plus `ETHEREUM_SEPOLIA` (testnet).
+Chain fields (`chain` / `chainId` on sign, sendAssets, evaluate, and the `{chain}` path on build-transaction) take the `WalletChain` enum rather than raw strings. Each value is the chain's CAIP-2 id, and `WALLET_CHAINS[chain]` / `getWalletChainConfig(chain)` expose its `curve` and `requiresRpcUrl`. Primary chains: Monad, Ethereum, Solana, Stellar, Tron, Bitcoin, Arbitrum, Avalanche, Base, Optimism, Polygon, Celo (all `_MAINNET`), plus `ETHEREUM_SEPOLIA` and `SOLANA_DEVNET` (testnets).
 
 ### Signing
 
