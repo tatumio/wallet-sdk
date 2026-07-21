@@ -463,7 +463,7 @@ describe('Portal-backed Tatum Wallets SDK', () => {
 describe('WalletChain primary-chain mapping', () => {
   it('exposes a Portal config for every primary chain, with the enum value as the chainId', () => {
     const chains = Object.values(WalletChain);
-    expect(chains).toHaveLength(14);
+    expect(chains).toHaveLength(15);
 
     for (const chain of chains) {
       const config = getWalletChainConfig(chain);
@@ -483,6 +483,12 @@ describe('WalletChain primary-chain mapping', () => {
       tatumNetwork: 'ethereum-mainnet',
     });
     expect(WALLET_CHAINS[WalletChain.SOLANA_MAINNET].curve).toBe('ED25519');
+    expect(WALLET_CHAINS[WalletChain.SOLANA_DEVNET]).toEqual({
+      chainId: 'solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1',
+      curve: 'ED25519',
+      requiresRpcUrl: false,
+      tatumNetwork: 'solana-devnet',
+    });
     expect(WALLET_CHAINS[WalletChain.STELLAR_MAINNET].curve).toBe('ED25519');
     expect(WALLET_CHAINS[WalletChain.BITCOIN_MAINNET]).toEqual({
       chainId: 'bip122:000000000019d6689c085ae165831e93-p2wpkh',

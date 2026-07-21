@@ -12,6 +12,7 @@ export enum WalletChain {
   ETHEREUM_MAINNET = 'eip155:1',
   ETHEREUM_SEPOLIA = 'eip155:11155111',
   SOLANA_MAINNET = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp',
+  SOLANA_DEVNET = 'solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1',
   STELLAR_MAINNET = 'stellar:pubnet',
   TRON_MAINNET = 'tron:mainnet',
   BITCOIN_MAINNET = 'bip122:000000000019d6689c085ae165831e93-p2wpkh',
@@ -64,6 +65,12 @@ export const WALLET_CHAINS: Record<WalletChain, WalletChainConfig> = {
     curve: 'ED25519',
     requiresRpcUrl: false,
     tatumNetwork: 'solana-mainnet',
+  },
+  [WalletChain.SOLANA_DEVNET]: {
+    chainId: WalletChain.SOLANA_DEVNET,
+    curve: 'ED25519',
+    requiresRpcUrl: false,
+    tatumNetwork: 'solana-devnet',
   },
   [WalletChain.STELLAR_MAINNET]: {
     chainId: WalletChain.STELLAR_MAINNET,

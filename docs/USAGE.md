@@ -157,6 +157,7 @@ const cfg = getWalletChainConfig(WalletChain.SOLANA_MAINNET);
 | `BITCOIN_MAINNET`   | `bip122:000000000019d6689c085ae165831e93-p2wpkh` | SECP256K1 | true             |
 | `TRON_MAINNET`      | `tron:mainnet`                                   | SECP256K1 | true             |
 | `SOLANA_MAINNET`    | `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp`        | ED25519   | false            |
+| `SOLANA_DEVNET`     | `solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1`        | ED25519   | false            |
 | `STELLAR_MAINNET`   | `stellar:pubnet`                                 | ED25519   | true             |
 
 `requiresRpcUrl` only signals whether the chain _needs_ an RPC URL for enclave operations —
