@@ -15,14 +15,21 @@ export enum WalletChain {
   SOLANA_DEVNET = 'solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1',
   STELLAR_MAINNET = 'stellar:pubnet',
   TRON_MAINNET = 'tron:mainnet',
+  TRON_NILE = 'tron:nile',
   BITCOIN_MAINNET = 'bip122:000000000019d6689c085ae165831e93-p2wpkh',
+  BITCOIN_TESTNET = 'bip122:000000000933ea01ad0ee984209779ba-p2wpkh',
   ARBITRUM_MAINNET = 'eip155:42161',
+  ARBITRUM_SEPOLIA = 'eip155:421614',
   AVALANCHE_MAINNET = 'eip155:43114',
   BASE_MAINNET = 'eip155:8453',
+  BASE_SEPOLIA = 'eip155:84532',
   OPTIMISM_MAINNET = 'eip155:10',
+  OPTIMISM_SEPOLIA = 'eip155:11155420',
   POLYGON_MAINNET = 'eip155:137',
+  POLYGON_AMOY = 'eip155:80002',
   CELO_MAINNET = 'eip155:42220',
   BSC_MAINNET = 'eip155:56',
+  BSC_TESTNET = 'eip155:97',
 }
 
 export interface WalletChainConfig {
@@ -84,17 +91,35 @@ export const WALLET_CHAINS: Record<WalletChain, WalletChainConfig> = {
     requiresRpcUrl: true,
     tatumNetwork: 'tron-mainnet',
   },
+  [WalletChain.TRON_NILE]: {
+    chainId: WalletChain.TRON_NILE,
+    curve: 'SECP256K1',
+    requiresRpcUrl: true,
+    tatumNetwork: 'tron-nile',
+  },
   [WalletChain.BITCOIN_MAINNET]: {
     chainId: WalletChain.BITCOIN_MAINNET,
     curve: 'SECP256K1',
     requiresRpcUrl: true,
     tatumNetwork: 'bitcoin-mainnet',
   },
+  [WalletChain.BITCOIN_TESTNET]: {
+    chainId: WalletChain.BITCOIN_TESTNET,
+    curve: 'SECP256K1',
+    requiresRpcUrl: true,
+    tatumNetwork: 'bitcoin-testnet',
+  },
   [WalletChain.ARBITRUM_MAINNET]: {
     chainId: WalletChain.ARBITRUM_MAINNET,
     curve: 'SECP256K1',
     requiresRpcUrl: false,
     tatumNetwork: 'arb-one-mainnet',
+  },
+  [WalletChain.ARBITRUM_SEPOLIA]: {
+    chainId: WalletChain.ARBITRUM_SEPOLIA,
+    curve: 'SECP256K1',
+    requiresRpcUrl: false,
+    tatumNetwork: 'arbitrum-one-sepolia',
   },
   [WalletChain.AVALANCHE_MAINNET]: {
     chainId: WalletChain.AVALANCHE_MAINNET,
@@ -108,17 +133,35 @@ export const WALLET_CHAINS: Record<WalletChain, WalletChainConfig> = {
     requiresRpcUrl: false,
     tatumNetwork: 'base-mainnet',
   },
+  [WalletChain.BASE_SEPOLIA]: {
+    chainId: WalletChain.BASE_SEPOLIA,
+    curve: 'SECP256K1',
+    requiresRpcUrl: false,
+    tatumNetwork: 'base-sepolia',
+  },
   [WalletChain.OPTIMISM_MAINNET]: {
     chainId: WalletChain.OPTIMISM_MAINNET,
     curve: 'SECP256K1',
     requiresRpcUrl: false,
     tatumNetwork: 'optimism-mainnet',
   },
+  [WalletChain.OPTIMISM_SEPOLIA]: {
+    chainId: WalletChain.OPTIMISM_SEPOLIA,
+    curve: 'SECP256K1',
+    requiresRpcUrl: false,
+    tatumNetwork: 'optimism-testnet',
+  },
   [WalletChain.POLYGON_MAINNET]: {
     chainId: WalletChain.POLYGON_MAINNET,
     curve: 'SECP256K1',
     requiresRpcUrl: false,
     tatumNetwork: 'polygon-mainnet',
+  },
+  [WalletChain.POLYGON_AMOY]: {
+    chainId: WalletChain.POLYGON_AMOY,
+    curve: 'SECP256K1',
+    requiresRpcUrl: false,
+    tatumNetwork: 'polygon-amoy',
   },
   [WalletChain.CELO_MAINNET]: {
     chainId: WalletChain.CELO_MAINNET,
@@ -131,6 +174,12 @@ export const WALLET_CHAINS: Record<WalletChain, WalletChainConfig> = {
     curve: 'SECP256K1',
     requiresRpcUrl: false,
     tatumNetwork: 'bsc-mainnet',
+  },
+  [WalletChain.BSC_TESTNET]: {
+    chainId: WalletChain.BSC_TESTNET,
+    curve: 'SECP256K1',
+    requiresRpcUrl: false,
+    tatumNetwork: 'bsc-testnet',
   },
 };
 

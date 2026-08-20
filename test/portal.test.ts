@@ -463,7 +463,7 @@ describe('Portal-backed Tatum Wallets SDK', () => {
 describe('WalletChain primary-chain mapping', () => {
   it('exposes a Portal config for every primary chain, with the enum value as the chainId', () => {
     const chains = Object.values(WalletChain);
-    expect(chains).toHaveLength(15);
+    expect(chains).toHaveLength(22);
 
     for (const chain of chains) {
       const config = getWalletChainConfig(chain);
@@ -503,11 +503,49 @@ describe('WalletChain primary-chain mapping', () => {
     // Non-obvious Tatum gateway slugs.
     expect(WALLET_CHAINS[WalletChain.ARBITRUM_MAINNET].tatumNetwork).toBe('arb-one-mainnet');
     expect(WALLET_CHAINS[WalletChain.AVALANCHE_MAINNET].tatumNetwork).toBe('avax-mainnet');
+    expect(WALLET_CHAINS[WalletChain.ARBITRUM_SEPOLIA].tatumNetwork).toBe('arbitrum-one-sepolia');
     expect(WALLET_CHAINS[WalletChain.ETHEREUM_SEPOLIA]).toEqual({
       chainId: 'eip155:11155111',
       curve: 'SECP256K1',
       requiresRpcUrl: false,
       tatumNetwork: 'ethereum-sepolia',
+    });
+    expect(WALLET_CHAINS[WalletChain.BASE_SEPOLIA]).toEqual({
+      chainId: 'eip155:84532',
+      curve: 'SECP256K1',
+      requiresRpcUrl: false,
+      tatumNetwork: 'base-sepolia',
+    });
+    expect(WALLET_CHAINS[WalletChain.POLYGON_AMOY]).toEqual({
+      chainId: 'eip155:80002',
+      curve: 'SECP256K1',
+      requiresRpcUrl: false,
+      tatumNetwork: 'polygon-amoy',
+    });
+    expect(WALLET_CHAINS[WalletChain.OPTIMISM_SEPOLIA]).toEqual({
+      chainId: 'eip155:11155420',
+      curve: 'SECP256K1',
+      requiresRpcUrl: false,
+      tatumNetwork: 'optimism-testnet',
+    });
+    expect(WALLET_CHAINS[WalletChain.BSC_TESTNET]).toEqual({
+      chainId: 'eip155:97',
+      curve: 'SECP256K1',
+      requiresRpcUrl: false,
+      tatumNetwork: 'bsc-testnet',
+    });
+    // Bitcoin and Tron have no Portal-managed RPC on either network.
+    expect(WALLET_CHAINS[WalletChain.BITCOIN_TESTNET]).toEqual({
+      chainId: 'bip122:000000000933ea01ad0ee984209779ba-p2wpkh',
+      curve: 'SECP256K1',
+      requiresRpcUrl: true,
+      tatumNetwork: 'bitcoin-testnet',
+    });
+    expect(WALLET_CHAINS[WalletChain.TRON_NILE]).toEqual({
+      chainId: 'tron:nile',
+      curve: 'SECP256K1',
+      requiresRpcUrl: true,
+      tatumNetwork: 'tron-nile',
     });
   });
 });
