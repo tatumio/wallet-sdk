@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.5.0...wallet-sdk-v0.6.0) (2026-08-20)
+
+
+### Features
+
+* add testnet chains (base, btc, tron:nile, optimism, polygon, bsc) ([#18](https://github.com/tatumio/wallet-sdk/issues/18)) ([33c7222](https://github.com/tatumio/wallet-sdk/commit/33c7222935310425b643247b36c28d76e82ec6fb))
+
 ## [0.5.0](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.4.0...wallet-sdk-v0.5.0) (2026-07-21)
 
 
