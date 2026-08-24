@@ -143,30 +143,51 @@ const cfg = getWalletChainConfig(WalletChain.SOLANA_MAINNET);
 // → { chainId, curve: 'ED25519', requiresRpcUrl: false, tatumNetwork: 'solana-mainnet' }
 ```
 
-| `WalletChain`       | CAIP-2 id                                        | Curve     | `requiresRpcUrl` |
-| ------------------- | ------------------------------------------------ | --------- | ---------------- |
-| `ETHEREUM_MAINNET`  | `eip155:1`                                       | SECP256K1 | false            |
-| `ETHEREUM_SEPOLIA`  | `eip155:11155111`                                | SECP256K1 | false            |
-| `MONAD_MAINNET`     | `eip155:143`                                     | SECP256K1 | false            |
-| `ARBITRUM_MAINNET`  | `eip155:42161`                                   | SECP256K1 | false            |
-| `ARBITRUM_SEPOLIA`  | `eip155:421614`                                  | SECP256K1 | false            |
-| `AVALANCHE_MAINNET` | `eip155:43114`                                   | SECP256K1 | false            |
-| `BASE_MAINNET`      | `eip155:8453`                                    | SECP256K1 | false            |
-| `BASE_SEPOLIA`      | `eip155:84532`                                   | SECP256K1 | false            |
-| `OPTIMISM_MAINNET`  | `eip155:10`                                      | SECP256K1 | false            |
-| `OPTIMISM_SEPOLIA`  | `eip155:11155420`                                | SECP256K1 | false            |
-| `POLYGON_MAINNET`   | `eip155:137`                                     | SECP256K1 | false            |
-| `POLYGON_AMOY`      | `eip155:80002`                                   | SECP256K1 | false            |
-| `CELO_MAINNET`      | `eip155:42220`                                   | SECP256K1 | true             |
-| `BSC_MAINNET`       | `eip155:56`                                      | SECP256K1 | false            |
-| `BSC_TESTNET`       | `eip155:97`                                      | SECP256K1 | false            |
-| `BITCOIN_MAINNET`   | `bip122:000000000019d6689c085ae165831e93-p2wpkh` | SECP256K1 | true             |
-| `BITCOIN_TESTNET`   | `bip122:000000000933ea01ad0ee984209779ba-p2wpkh` | SECP256K1 | true             |
-| `TRON_MAINNET`      | `tron:mainnet`                                   | SECP256K1 | true             |
-| `TRON_NILE`         | `tron:nile`                                      | SECP256K1 | true             |
-| `SOLANA_MAINNET`    | `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp`        | ED25519   | false            |
-| `SOLANA_DEVNET`     | `solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1`        | ED25519   | false            |
-| `STELLAR_MAINNET`   | `stellar:pubnet`                                 | ED25519   | true             |
+| `WalletChain`           | CAIP-2 id                                        | Curve     | `requiresRpcUrl` |
+| ----------------------- | ------------------------------------------------ | --------- | ---------------- |
+| `ETHEREUM_MAINNET`      | `eip155:1`                                       | SECP256K1 | false            |
+| `ETHEREUM_SEPOLIA`      | `eip155:11155111`                                | SECP256K1 | false            |
+| `MONAD_MAINNET`         | `eip155:143`                                     | SECP256K1 | false            |
+| `ARBITRUM_MAINNET`      | `eip155:42161`                                   | SECP256K1 | false            |
+| `ARBITRUM_SEPOLIA`      | `eip155:421614`                                  | SECP256K1 | false            |
+| `AVALANCHE_MAINNET`     | `eip155:43114`                                   | SECP256K1 | false            |
+| `BASE_MAINNET`          | `eip155:8453`                                    | SECP256K1 | false            |
+| `BASE_SEPOLIA`          | `eip155:84532`                                   | SECP256K1 | false            |
+| `OPTIMISM_MAINNET`      | `eip155:10`                                      | SECP256K1 | false            |
+| `OPTIMISM_SEPOLIA`      | `eip155:11155420`                                | SECP256K1 | false            |
+| `POLYGON_MAINNET`       | `eip155:137`                                     | SECP256K1 | false            |
+| `POLYGON_AMOY`          | `eip155:80002`                                   | SECP256K1 | false            |
+| `CELO_MAINNET`          | `eip155:42220`                                   | SECP256K1 | true             |
+| `BSC_MAINNET`           | `eip155:56`                                      | SECP256K1 | false            |
+| `BSC_TESTNET`           | `eip155:97`                                      | SECP256K1 | false            |
+| `BITCOIN_MAINNET`       | `bip122:000000000019d6689c085ae165831e93-p2wpkh` | SECP256K1 | true             |
+| `BITCOIN_TESTNET`       | `bip122:000000000933ea01ad0ee984209779ba-p2wpkh` | SECP256K1 | true             |
+| `TRON_MAINNET`          | `tron:mainnet`                                   | SECP256K1 | true             |
+| `TRON_NILE`             | `tron:nile`                                      | SECP256K1 | true             |
+| `SOLANA_MAINNET`        | `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp`        | ED25519   | false            |
+| `SOLANA_DEVNET`         | `solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1`        | ED25519   | false            |
+| `STELLAR_MAINNET`       | `stellar:pubnet`                                 | ED25519   | true             |
+| `STELLAR_TESTNET`       | `stellar:testnet`                                | ED25519   | true             |
+| `ARBITRUM_NOVA_MAINNET` | `eip155:42170`                                   | SECP256K1 | false            |
+| `AVALANCHE_FUJI`        | `eip155:43113`                                   | SECP256K1 | false            |
+| `MONAD_TESTNET`         | `eip155:10143`                                   | SECP256K1 | false            |
+| `GNOSIS_MAINNET`        | `eip155:100`                                     | SECP256K1 | false            |
+| `GNOSIS_CHIADO`         | `eip155:10200`                                   | SECP256K1 | false            |
+| `FANTOM_MAINNET`        | `eip155:250`                                     | SECP256K1 | false            |
+| `ROOTSTOCK_MAINNET`     | `eip155:30`                                      | SECP256K1 | false            |
+| `ROOTSTOCK_TESTNET`     | `eip155:31`                                      | SECP256K1 | false            |
+| `ZKSYNC_MAINNET`        | `eip155:324`                                     | SECP256K1 | false            |
+| `ZKSYNC_SEPOLIA`        | `eip155:300`                                     | SECP256K1 | false            |
+| `CHILIZ_MAINNET`        | `eip155:88888`                                   | SECP256K1 | true             |
+| `CHILIZ_TESTNET`        | `eip155:88882`                                   | SECP256K1 | true             |
+| `CRONOS_MAINNET`        | `eip155:25`                                      | SECP256K1 | true             |
+| `RONIN_MAINNET`         | `eip155:2020`                                    | SECP256K1 | true             |
+| `LISK_MAINNET`          | `eip155:1135`                                    | SECP256K1 | true             |
+| `LITECOIN_MAINNET`      | `bip122:12a765e31ffd4059bada1e25190f6e9`         | SECP256K1 | true             |
+| `TRON_SHASTA`           | `tron:shasta`                                    | SECP256K1 | true             |
+
+`LITECOIN_MAINNET` is not a well-formed CAIP-2 id — Portal's registry key uses a
+31-character genesis hash and no `-p2wpkh` suffix, and the SDK passes it through verbatim.
 
 `requiresRpcUrl` only signals whether the chain _needs_ an RPC URL for enclave operations —
 the SDK supplies one automatically regardless (see below). `WALLET_CHAINS[chain]` returns the
