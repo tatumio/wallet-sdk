@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.6.0...wallet-sdk-v0.7.0) (2026-08-24)
+
+
+### Features
+
+* add new chains ([#20](https://github.com/tatumio/wallet-sdk/issues/20)) ([ca609eb](https://github.com/tatumio/wallet-sdk/commit/ca609ebf6a24cee1090332d7780b342f06a67612))
+
 ## [0.6.0](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.5.0...wallet-sdk-v0.6.0) (2026-08-20)
 
 
