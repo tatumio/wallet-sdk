@@ -30,6 +30,29 @@ export enum WalletChain {
   CELO_MAINNET = 'eip155:42220',
   BSC_MAINNET = 'eip155:56',
   BSC_TESTNET = 'eip155:97',
+  ARBITRUM_NOVA_MAINNET = 'eip155:42170',
+  AVALANCHE_FUJI = 'eip155:43113',
+  MONAD_TESTNET = 'eip155:10143',
+  GNOSIS_MAINNET = 'eip155:100',
+  GNOSIS_CHIADO = 'eip155:10200',
+  FANTOM_MAINNET = 'eip155:250',
+  ROOTSTOCK_MAINNET = 'eip155:30',
+  ROOTSTOCK_TESTNET = 'eip155:31',
+  ZKSYNC_MAINNET = 'eip155:324',
+  ZKSYNC_SEPOLIA = 'eip155:300',
+  CHILIZ_MAINNET = 'eip155:88888',
+  CHILIZ_TESTNET = 'eip155:88882',
+  CRONOS_MAINNET = 'eip155:25',
+  RONIN_MAINNET = 'eip155:2020',
+  LISK_MAINNET = 'eip155:1135',
+  /**
+   * Litecoin. Portal's registry key uses a 31-character genesis hash and no
+   * `-p2wpkh` suffix (unlike its Bitcoin ids), so it is not a well-formed CAIP-2
+   * string. Kept verbatim — it is the value Portal's API matches on.
+   */
+  LITECOIN_MAINNET = 'bip122:12a765e31ffd4059bada1e25190f6e9',
+  STELLAR_TESTNET = 'stellar:testnet',
+  TRON_SHASTA = 'tron:shasta',
 }
 
 export interface WalletChainConfig {
@@ -180,6 +203,114 @@ export const WALLET_CHAINS: Record<WalletChain, WalletChainConfig> = {
     curve: 'SECP256K1',
     requiresRpcUrl: false,
     tatumNetwork: 'bsc-testnet',
+  },
+  [WalletChain.ARBITRUM_NOVA_MAINNET]: {
+    chainId: WalletChain.ARBITRUM_NOVA_MAINNET,
+    curve: 'SECP256K1',
+    requiresRpcUrl: false,
+    tatumNetwork: 'arbitrum-nova-mainnet',
+  },
+  [WalletChain.AVALANCHE_FUJI]: {
+    chainId: WalletChain.AVALANCHE_FUJI,
+    curve: 'SECP256K1',
+    requiresRpcUrl: false,
+    tatumNetwork: 'avalanche-testnet',
+  },
+  [WalletChain.MONAD_TESTNET]: {
+    chainId: WalletChain.MONAD_TESTNET,
+    curve: 'SECP256K1',
+    requiresRpcUrl: false,
+    tatumNetwork: 'monad-testnet',
+  },
+  [WalletChain.GNOSIS_MAINNET]: {
+    chainId: WalletChain.GNOSIS_MAINNET,
+    curve: 'SECP256K1',
+    requiresRpcUrl: false,
+    tatumNetwork: 'gnosis-mainnet',
+  },
+  [WalletChain.GNOSIS_CHIADO]: {
+    chainId: WalletChain.GNOSIS_CHIADO,
+    curve: 'SECP256K1',
+    requiresRpcUrl: false,
+    tatumNetwork: 'gnosis-testnet',
+  },
+  [WalletChain.FANTOM_MAINNET]: {
+    chainId: WalletChain.FANTOM_MAINNET,
+    curve: 'SECP256K1',
+    requiresRpcUrl: false,
+    tatumNetwork: 'fantom-mainnet',
+  },
+  [WalletChain.ROOTSTOCK_MAINNET]: {
+    chainId: WalletChain.ROOTSTOCK_MAINNET,
+    curve: 'SECP256K1',
+    requiresRpcUrl: false,
+    tatumNetwork: 'rootstock-mainnet',
+  },
+  [WalletChain.ROOTSTOCK_TESTNET]: {
+    chainId: WalletChain.ROOTSTOCK_TESTNET,
+    curve: 'SECP256K1',
+    requiresRpcUrl: false,
+    tatumNetwork: 'rootstock-testnet',
+  },
+  [WalletChain.ZKSYNC_MAINNET]: {
+    chainId: WalletChain.ZKSYNC_MAINNET,
+    curve: 'SECP256K1',
+    requiresRpcUrl: false,
+    tatumNetwork: 'zksync-mainnet',
+  },
+  [WalletChain.ZKSYNC_SEPOLIA]: {
+    chainId: WalletChain.ZKSYNC_SEPOLIA,
+    curve: 'SECP256K1',
+    requiresRpcUrl: false,
+    tatumNetwork: 'zksync-sepolia',
+  },
+  [WalletChain.CHILIZ_MAINNET]: {
+    chainId: WalletChain.CHILIZ_MAINNET,
+    curve: 'SECP256K1',
+    requiresRpcUrl: true,
+    tatumNetwork: 'chiliz-mainnet',
+  },
+  [WalletChain.CHILIZ_TESTNET]: {
+    chainId: WalletChain.CHILIZ_TESTNET,
+    curve: 'SECP256K1',
+    requiresRpcUrl: true,
+    tatumNetwork: 'chiliz-testnet',
+  },
+  [WalletChain.CRONOS_MAINNET]: {
+    chainId: WalletChain.CRONOS_MAINNET,
+    curve: 'SECP256K1',
+    requiresRpcUrl: true,
+    tatumNetwork: 'cronos-mainnet',
+  },
+  [WalletChain.RONIN_MAINNET]: {
+    chainId: WalletChain.RONIN_MAINNET,
+    curve: 'SECP256K1',
+    requiresRpcUrl: true,
+    tatumNetwork: 'ronin-mainnet',
+  },
+  [WalletChain.LISK_MAINNET]: {
+    chainId: WalletChain.LISK_MAINNET,
+    curve: 'SECP256K1',
+    requiresRpcUrl: true,
+    tatumNetwork: 'lisk-mainnet',
+  },
+  [WalletChain.LITECOIN_MAINNET]: {
+    chainId: WalletChain.LITECOIN_MAINNET,
+    curve: 'SECP256K1',
+    requiresRpcUrl: true,
+    tatumNetwork: 'litecoin-mainnet',
+  },
+  [WalletChain.STELLAR_TESTNET]: {
+    chainId: WalletChain.STELLAR_TESTNET,
+    curve: 'ED25519',
+    requiresRpcUrl: true,
+    tatumNetwork: 'stellar-testnet',
+  },
+  [WalletChain.TRON_SHASTA]: {
+    chainId: WalletChain.TRON_SHASTA,
+    curve: 'SECP256K1',
+    requiresRpcUrl: true,
+    tatumNetwork: 'tron-shasta',
   },
 };
 

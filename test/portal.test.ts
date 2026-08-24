@@ -463,7 +463,7 @@ describe('Portal-backed Tatum Wallets SDK', () => {
 describe('WalletChain primary-chain mapping', () => {
   it('exposes a Portal config for every primary chain, with the enum value as the chainId', () => {
     const chains = Object.values(WalletChain);
-    expect(chains).toHaveLength(22);
+    expect(chains).toHaveLength(40);
 
     for (const chain of chains) {
       const config = getWalletChainConfig(chain);
@@ -541,6 +541,51 @@ describe('WalletChain primary-chain mapping', () => {
       requiresRpcUrl: true,
       tatumNetwork: 'bitcoin-testnet',
     });
+    // Chains cross-checked against Portal's Core Feature Support table
+    // (`requiresRpcUrl` === "Default RPC" ❌) and Tatum's blockchains2.json slugs.
+    expect(WALLET_CHAINS[WalletChain.LITECOIN_MAINNET]).toEqual({
+      // Portal lists a 31-char genesis hash (not the CAIP-2 32-char form) and no
+      // `-p2wpkh` suffix; passed through verbatim as Portal's registry key.
+      chainId: 'bip122:12a765e31ffd4059bada1e25190f6e9',
+      curve: 'SECP256K1',
+      requiresRpcUrl: true,
+      tatumNetwork: 'litecoin-mainnet',
+    });
+    expect(WALLET_CHAINS[WalletChain.STELLAR_TESTNET]).toEqual({
+      chainId: 'stellar:testnet',
+      curve: 'ED25519',
+      requiresRpcUrl: true,
+      tatumNetwork: 'stellar-testnet',
+    });
+    expect(WALLET_CHAINS[WalletChain.TRON_SHASTA]).toEqual({
+      chainId: 'tron:shasta',
+      curve: 'SECP256K1',
+      requiresRpcUrl: true,
+      tatumNetwork: 'tron-shasta',
+    });
+    expect(WALLET_CHAINS[WalletChain.ZKSYNC_MAINNET]).toEqual({
+      chainId: 'eip155:324',
+      curve: 'SECP256K1',
+      requiresRpcUrl: false,
+      tatumNetwork: 'zksync-mainnet',
+    });
+    expect(WALLET_CHAINS[WalletChain.GNOSIS_CHIADO]).toEqual({
+      chainId: 'eip155:10200',
+      curve: 'SECP256K1',
+      requiresRpcUrl: false,
+      tatumNetwork: 'gnosis-testnet',
+    });
+    // Portal reports no default RPC for these, so callers must supply one.
+    expect(WALLET_CHAINS[WalletChain.CHILIZ_MAINNET].requiresRpcUrl).toBe(true);
+    expect(WALLET_CHAINS[WalletChain.CRONOS_MAINNET].requiresRpcUrl).toBe(true);
+    expect(WALLET_CHAINS[WalletChain.RONIN_MAINNET].requiresRpcUrl).toBe(true);
+    expect(WALLET_CHAINS[WalletChain.LISK_MAINNET].requiresRpcUrl).toBe(true);
+    // Tatum slugs that don't follow the `<chain>-<network>` guess.
+    expect(WALLET_CHAINS[WalletChain.AVALANCHE_FUJI].tatumNetwork).toBe('avalanche-testnet');
+    expect(WALLET_CHAINS[WalletChain.ARBITRUM_NOVA_MAINNET].tatumNetwork).toBe(
+      'arbitrum-nova-mainnet',
+    );
+    expect(WALLET_CHAINS[WalletChain.ZKSYNC_SEPOLIA].tatumNetwork).toBe('zksync-sepolia');
     expect(WALLET_CHAINS[WalletChain.TRON_NILE]).toEqual({
       chainId: 'tron:nile',
       curve: 'SECP256K1',
