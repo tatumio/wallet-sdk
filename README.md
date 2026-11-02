@@ -168,6 +168,10 @@ const recovered = await client.recoverWallet({
 Enclave operations that touch a chain (`sign`, `sendAssets`) **require an explicit `rpcUrl`** in
 the body
 
+**Tron exception:** Tron transactions are broadcast over gRPC, so HTTP(S) RPC URLs (including the
+Tatum gateway) are not supported. For `tron:mainnet`, `tron:nile`, and `tron:shasta` the SDK always
+routes `sign`/`sendAssets` through a managed Tron gateway and ignores the `rpcUrl` you pass.
+
 Authentication note: custodian-scoped calls use your Tatum `x-api-key`. Client-scoped calls
 (`initClient`) use the client token and need **no** Tatum key.
 

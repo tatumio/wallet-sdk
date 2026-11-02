@@ -1,4 +1,5 @@
-import { PORTAL_ENCLAVE_BASE_URL } from '../constants/index.js';
+import { WalletChain } from '../chains.js';
+import { PORTAL_ENCLAVE_BASE_URL, PORTAL_RPC_GATEWAY_BASE_URL } from '../constants/index.js';
 import { buildRequestOptions } from '../operation.js';
 import { createPortalApiClient } from './transport.js';
 import type { Curve } from './types/index.js';
@@ -30,6 +31,38 @@ export const enclaveOperations = {
 export type EnclaveOperation = keyof typeof enclaveOperations;
 
 /**
+ * Portal broadcasts Tron over gRPC and rejects other HTTP(S) RPC URLs, so Tron
+ * `sign`/`sendAssets` always go through Portal's own gateway, whatever `rpcUrl`
+ * the caller passed.
+ */
+const TRON_RPC_GATEWAYS: Readonly<Record<string, string>> = {
+  [WalletChain.TRON_MAINNET]: `${PORTAL_RPC_GATEWAY_BASE_URL}/tron/mainnet`,
+  [WalletChain.TRON_NILE]: `${PORTAL_RPC_GATEWAY_BASE_URL}/tron/nile`,
+  [WalletChain.TRON_SHASTA]: `${PORTAL_RPC_GATEWAY_BASE_URL}/tron/shasta`
+};
+
+const CHAIN_FIELD: Partial<Record<EnclaveOperation, string>> = {
+  sign: 'chainId',
+  sendAssets: 'chain'
+};
+
+function withTronRpcGateway(operationName: EnclaveOperation, options: RequestOptions): RequestOptions {
+  const chainField = CHAIN_FIELD[operationName];
+  const body = options.body;
+  if (chainField === undefined || typeof body !== 'object' || body === null) {
+    return options;
+  }
+
+  const chain = (body as Record<string, unknown>)[chainField];
+  const gateway = typeof chain === 'string' ? TRON_RPC_GATEWAYS[chain] : undefined;
+  if (gateway === undefined) {
+    return options;
+  }
+
+  return { ...options, body: { ...body, rpcUrl: gateway } };
+}
+
+/**
  * Enclave MPC layer (`/v1/...`). Operates on key shares;
  * authenticates with the client's own token (Bearer) and never touches
  * the Tatum API key. Chain operations (`sign`/`sendAssets`) require the caller
@@ -45,7 +78,9 @@ export class EnclaveApi {
     const operation = enclaveOperations[operationName];
     const client = createPortalApiClient(this.sdkConfig, this.token, PORTAL_ENCLAVE_BASE_URL);
 
-    return client.request<TResponse>(buildRequestOptions(operation.method, operation.path, options));
+    return client.request<TResponse>(
+      buildRequestOptions(operation.method, operation.path, withTronRpcGateway(operationName, options))
+    );
   }
 
   generateWallet<TResponse = GenerateWalletResponse>(options?: PortalRequestOptions): Promise<TResponse> {

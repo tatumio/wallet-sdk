@@ -18,7 +18,7 @@ export type RecoverWalletResponse = CurveShares;
 
 export interface SignBody {
   method: string; // RPC method, e.g. 'eth_sendTransaction', 'personal_sign'
-  params: object | unknown[]; // method-dependent; spec does not enumerate
+  params: object | unknown[] | string; // method-dependent; string for base64 txs (e.g. tron_/stellar_sendTransaction)
   share: string;
   chainId: WalletChain;
   to: string;

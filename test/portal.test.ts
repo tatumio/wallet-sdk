@@ -460,6 +460,105 @@ describe('Portal-backed Tatum Wallets SDK', () => {
   });
 });
 
+describe('Tron RPC routing', () => {
+  const captureClient = () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return jsonResponse({ transactionHash: 'txid', data: 'signed' });
+      },
+    });
+    return { calls, client: sdk.initClient({ token: 'portal-client-token' }) };
+  };
+  const sentBody = (init: RequestInit | undefined) => JSON.parse(String(init?.body)) as Record<string, unknown>;
+
+  it.each([
+    [WalletChain.TRON_MAINNET, 'https://api.portalhq.io/rpc/v1/tron/mainnet'],
+    [WalletChain.TRON_NILE, 'https://api.portalhq.io/rpc/v1/tron/nile'],
+    [WalletChain.TRON_SHASTA, 'https://api.portalhq.io/rpc/v1/tron/shasta'],
+  ])('overrides the caller rpcUrl with the Portal gateway on sendAssets for %s', async (chain, gateway) => {
+    const { calls, client } = captureClient();
+
+    await client.sendAssets({
+      body: {
+        share: 'share',
+        chain,
+        to: 'TXBfNSzfKByjzrmUgjLS4NRk9BGw61CWxW',
+        token: 'USDT',
+        amount: '5',
+        rpcUrl: 'https://tron-mainnet.gateway.tatum.io/?api_key=key',
+      },
+    });
+
+    expect(calls).toHaveLength(1);
+    expect(String(calls[0]?.input)).toBe('https://mpc-client.portalhq.io/v1/assets/send');
+    expect(sentBody(calls[0]?.init)).toEqual({
+      share: 'share',
+      chain,
+      to: 'TXBfNSzfKByjzrmUgjLS4NRk9BGw61CWxW',
+      token: 'USDT',
+      amount: '5',
+      rpcUrl: gateway,
+    });
+  });
+
+  it('overrides the caller rpcUrl with the Portal gateway on sign for Tron', async () => {
+    const { calls, client } = captureClient();
+
+    await client.sign({
+      body: {
+        share: 'share',
+        method: 'tron_sendTransaction',
+        params: 'BASE64_TX',
+        chainId: WalletChain.TRON_NILE,
+        to: 'TXBfNSzfKByjzrmUgjLS4NRk9BGw61CWxW',
+        rpcUrl: 'https://tron-nile.gateway.tatum.io',
+      },
+    });
+
+    expect(String(calls[0]?.input)).toBe('https://mpc-client.portalhq.io/v1/sign');
+    expect(sentBody(calls[0]?.init)).toMatchObject({
+      chainId: 'tron:nile',
+      rpcUrl: 'https://api.portalhq.io/rpc/v1/tron/nile',
+    });
+  });
+
+  it('applies the Tron override through the enclaveRequest escape hatch too', async () => {
+    const { calls, client } = captureClient();
+
+    await client.enclaveRequest('sendAssets', {
+      body: {
+        share: 'share',
+        chain: WalletChain.TRON_MAINNET,
+        to: 'T...',
+        token: 'NATIVE',
+        amount: '1',
+        rpcUrl: 'https://tron-mainnet.gateway.tatum.io',
+      },
+    });
+
+    expect(sentBody(calls[0]?.init)).toMatchObject({ rpcUrl: 'https://api.portalhq.io/rpc/v1/tron/mainnet' });
+  });
+
+  it('leaves non-Tron rpcUrl untouched', async () => {
+    const { calls, client } = captureClient();
+
+    await client.sendAssets({
+      body: {
+        share: 'share',
+        chain: WalletChain.SOLANA_MAINNET,
+        to: 'So1...',
+        token: 'NATIVE',
+        amount: '1',
+        rpcUrl: 'https://solana-mainnet.gateway.tatum.io',
+      },
+    });
+
+    expect(sentBody(calls[0]?.init)).toMatchObject({ rpcUrl: 'https://solana-mainnet.gateway.tatum.io' });
+  });
+});
+
 describe('WalletChain primary-chain mapping', () => {
   it('exposes a Portal config for every primary chain, with the enum value as the chainId', () => {
     const chains = Object.values(WalletChain);

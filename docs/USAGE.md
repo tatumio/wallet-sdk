@@ -281,6 +281,11 @@ explicit `rpcUrl` in the body — the SDK does not inject one. Use any node:
   not in the URL path (a key in the path leaks through logs and referrer headers). The keyless
   anonymous gateway responds but is rate-limited to a few requests per minute — dev/testing only.
 
+**Tron exception.** Tron transactions are broadcast over gRPC, so HTTP(S) RPC URLs, including the
+Tatum gateway, are not supported. For `TRON_MAINNET`, `TRON_NILE`, and `TRON_SHASTA` the SDK
+always routes `sign`/`sendAssets` through a managed Tron gateway and ignores the `rpcUrl` you
+pass. A USDT transfer still needs TRX in the sending wallet for fees; gas is not sponsored on Tron.
+
 ### Signing
 
 `sign` runs an RPC signing method and, for transaction methods, submits it:
