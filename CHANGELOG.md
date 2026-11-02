@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.7.0...wallet-sdk-v0.7.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* route Tron sign/sendAssets through managed RPC gateway ([#22](https://github.com/tatumio/wallet-sdk/issues/22)) ([c444b9f](https://github.com/tatumio/wallet-sdk/commit/c444b9f1a7bf648916fb9512c319b7be6ffe21a5))
+
 ## [0.7.0](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.6.0...wallet-sdk-v0.7.0) (2026-08-24)
 
 
