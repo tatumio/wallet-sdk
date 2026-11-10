@@ -1,5 +1,6 @@
-import { WalletChain } from '../chains.js';
+import { END_OF_LIFE_CHAINS, WalletChain } from '../chains.js';
 import { PORTAL_ENCLAVE_BASE_URL, PORTAL_RPC_GATEWAY_BASE_URL } from '../constants/index.js';
+import { WalletChainEndOfLifeError } from '../errors.js';
 import { buildRequestOptions } from '../operation.js';
 import { createPortalApiClient } from './transport.js';
 import type { Curve } from './types/index.js';
@@ -46,20 +47,25 @@ const CHAIN_FIELD: Partial<Record<EnclaveOperation, string>> = {
   sendAssets: 'chain'
 };
 
-function withTronRpcGateway(operationName: EnclaveOperation, options: RequestOptions): RequestOptions {
+/** The chain a `sign`/`sendAssets` request targets; `undefined` for other operations. */
+function targetChain(operationName: EnclaveOperation, options: RequestOptions): string | undefined {
   const chainField = CHAIN_FIELD[operationName];
   const body = options.body;
   if (chainField === undefined || typeof body !== 'object' || body === null) {
-    return options;
+    return undefined;
   }
 
   const chain = (body as Record<string, unknown>)[chainField];
-  const gateway = typeof chain === 'string' ? TRON_RPC_GATEWAYS[chain] : undefined;
+  return typeof chain === 'string' ? chain : undefined;
+}
+
+function withTronRpcGateway(chain: string | undefined, options: RequestOptions): RequestOptions {
+  const gateway = chain === undefined ? undefined : TRON_RPC_GATEWAYS[chain];
   if (gateway === undefined) {
     return options;
   }
 
-  return { ...options, body: { ...body, rpcUrl: gateway } };
+  return { ...options, body: { ...(options.body as object), rpcUrl: gateway } };
 }
 
 /**
@@ -76,10 +82,16 @@ export class EnclaveApi {
 
   request<TResponse = unknown>(operationName: EnclaveOperation, options: RequestOptions = {}): Promise<TResponse> {
     const operation = enclaveOperations[operationName];
+    const chain = targetChain(operationName, options);
+    const endOfLife = chain === undefined ? undefined : END_OF_LIFE_CHAINS[chain];
+    if (chain !== undefined && endOfLife !== undefined) {
+      return Promise.reject(new WalletChainEndOfLifeError(chain, endOfLife));
+    }
+
     const client = createPortalApiClient(this.sdkConfig, this.token, PORTAL_ENCLAVE_BASE_URL);
 
     return client.request<TResponse>(
-      buildRequestOptions(operation.method, operation.path, withTronRpcGateway(operationName, options))
+      buildRequestOptions(operation.method, operation.path, withTronRpcGateway(chain, options))
     );
   }
 

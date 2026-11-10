@@ -44,6 +44,13 @@ export enum WalletChain {
   CHILIZ_TESTNET = 'eip155:88882',
   CRONOS_MAINNET = 'eip155:25',
   RONIN_MAINNET = 'eip155:2020',
+  /**
+   * @deprecated The Lisk chain reached end of life on 2026-11-02 and is no
+   * longer operated. `sign` and `sendAssets` reject it with a
+   * `WalletChainEndOfLifeError`. This member will be removed in a future major
+   * release. See
+   * https://github.com/tatumio/wallet-sdk/blob/master/CHANGELOG.md
+   */
   LISK_MAINNET = 'eip155:1135',
   /**
    * Litecoin. Portal's registry key uses a 31-character genesis hash and no
@@ -312,6 +319,14 @@ export const WALLET_CHAINS: Record<WalletChain, WalletChainConfig> = {
     requiresRpcUrl: true,
     tatumNetwork: 'tron-shasta',
   },
+};
+
+/**
+ * Chains that reached end of life, with the message `sign` and `sendAssets`
+ * reject with. Keyed by CAIP-2 id.
+ */
+export const END_OF_LIFE_CHAINS: Readonly<Record<string, string>> = {
+  [WalletChain.LISK_MAINNET]: 'Lisk chain reached end of life on 2026-11-02 and is no longer supported',
 };
 
 /** Resolve the configuration for a supported chain. */
