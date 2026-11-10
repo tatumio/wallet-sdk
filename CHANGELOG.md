@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.7.1...wallet-sdk-v0.8.0) (2026-11-10)
+
+
+### Features
+
+* deprecate LISK_MAINNET and reject sign/sendAssets on it (chain end of life) ([#24](https://github.com/tatumio/wallet-sdk/issues/24)) ([a402ca8](https://github.com/tatumio/wallet-sdk/commit/a402ca86a98c9f7314b077bd55200c0f349b7f29))
+
 ## [0.7.1](https://github.com/tatumio/wallet-sdk/compare/wallet-sdk-v0.7.0...wallet-sdk-v0.7.1) (2026-11-02)
 
 
