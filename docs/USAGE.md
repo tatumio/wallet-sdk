@@ -189,8 +189,9 @@ const cfg = getWalletChainConfig(WalletChain.SOLANA_MAINNET);
 31-character genesis hash and no `-p2wpkh` suffix, and the SDK passes it through verbatim.
 
 `LISK_MAINNET` (`eip155:1135`) is deprecated and no longer listed: the Lisk chain reached end
-of life on 2026-11-02. The enum member still exists and will be removed in a future major
-release.
+of life on 2026-11-02. `sign` and `sendAssets` reject it with a `WalletChainEndOfLifeError`
+(`Lisk chain reached end of life on 2026-11-02 and is no longer supported`) before any request
+is sent. The enum member still exists and will be removed in a future major release.
 
 `requiresRpcUrl` only signals whether the chain _needs_ an RPC URL for enclave operations —
 the SDK supplies one automatically regardless (see below). `WALLET_CHAINS[chain]` returns the

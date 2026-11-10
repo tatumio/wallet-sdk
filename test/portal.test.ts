@@ -1,5 +1,11 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
-import { WALLET_CHAINS, TatumWalletsSdk, WalletChain, getWalletChainConfig } from '../src/index.js';
+import {
+  WALLET_CHAINS,
+  TatumWalletsSdk,
+  WalletChain,
+  WalletChainEndOfLifeError,
+  getWalletChainConfig,
+} from '../src/index.js';
 import type {
   BuildTransactionResponse,
   ClientDetails,
@@ -556,6 +562,71 @@ describe('Tron RPC routing', () => {
     });
 
     expect(sentBody(calls[0]?.init)).toMatchObject({ rpcUrl: 'https://solana-mainnet.gateway.tatum.io' });
+  });
+});
+
+describe('End-of-life chains', () => {
+  const captureClient = () => {
+    const calls: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
+    const sdk = new TatumWalletsSdk({
+      fetch: async (input, init) => {
+        calls.push({ input, init });
+        return jsonResponse({ transactionHash: 'txid', data: 'signed' });
+      },
+    });
+    return { calls, client: sdk.initClient({ token: 'portal-client-token' }) };
+  };
+  const message = 'Lisk chain reached end of life on 2026-11-02 and is no longer supported';
+
+  it('rejects sendAssets on Lisk without sending a request', async () => {
+    const { calls, client } = captureClient();
+
+    const error = await client
+      .sendAssets({
+        body: {
+          share: 'share',
+          chain: WalletChain.LISK_MAINNET,
+          to: '0xabc',
+          token: 'NATIVE',
+          amount: '1',
+          rpcUrl: 'https://lisk-mainnet.gateway.tatum.io',
+        },
+      })
+      .catch((err: unknown) => err);
+
+    expect(error).toBeInstanceOf(WalletChainEndOfLifeError);
+    expect((error as WalletChainEndOfLifeError).message).toBe(message);
+    expect((error as WalletChainEndOfLifeError).chain).toBe('eip155:1135');
+    expect(calls).toHaveLength(0);
+  });
+
+  it('rejects sign on Lisk without sending a request', async () => {
+    const { calls, client } = captureClient();
+
+    await expect(
+      client.sign({
+        body: {
+          share: 'share',
+          method: 'personal_sign',
+          params: ['0x68656c6c6f', '0xabc'],
+          chainId: WalletChain.LISK_MAINNET,
+          to: '0xabc',
+          rpcUrl: 'https://lisk-mainnet.gateway.tatum.io',
+        },
+      }),
+    ).rejects.toThrow(message);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('rejects Lisk through the enclaveRequest escape hatch too', async () => {
+    const { calls, client } = captureClient();
+
+    await expect(
+      client.enclaveRequest('sendAssets', {
+        body: { share: 'share', chain: 'eip155:1135', to: '0xabc', token: 'NATIVE', amount: '1', rpcUrl: 'https://x' },
+      }),
+    ).rejects.toBeInstanceOf(WalletChainEndOfLifeError);
+    expect(calls).toHaveLength(0);
   });
 });
 

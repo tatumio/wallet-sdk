@@ -72,3 +72,17 @@ export class WalletsApiError extends Error {
     this.headers = options.headers;
   }
 }
+
+/**
+ * Thrown by `sign` and `sendAssets` before any request is sent when the target
+ * chain has reached end of life.
+ */
+export class WalletChainEndOfLifeError extends Error {
+  readonly chain: string;
+
+  constructor(chain: string, message: string) {
+    super(message);
+    this.name = 'WalletChainEndOfLifeError';
+    this.chain = chain;
+  }
+}
